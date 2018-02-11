@@ -4,13 +4,13 @@ import os
 import glob
 import Image
 
-from uvscada import gxs700_util
+import gxs700.util
 
 def process_png(fin, fout, hist_eq=False):
     print 'Reading %s...' % fin
     im = Image.open(fin)
     print 'Equalizing image...'
-    ime = gxs700_util.histeq_im(im)
+    ime = gxs700.util.histeq_im(im)
     print 'Saving %s...' % fout
     ime.save(fout)
 

@@ -21,9 +21,7 @@ eeprom2
     write: controlWrite(0x40, 0xB0, 0x000C
 '''
 
-from uvscada import gxs700
-from uvscada import gxs700_util
-from uvscada import util
+import gxs700.util
 
 if __name__ == "__main__":
     import argparse
@@ -38,7 +36,7 @@ if __name__ == "__main__":
     # With corrupted EEPROM bad w/h
     # and its just not necessary since all we really need is the FX2
     # heck, we don't even need to load FW really
-    _usbcontext, _dev, gxs = gxs700_util.ez_open_ex(verbose=args.verbose, init=False)
+    _usbcontext, _dev, gxs = gxs700.util.ez_open_ex(verbose=args.verbose, init=False)
 
     # matches this
     # buff = dump_loop(0x0B, 0x80, 0x0000, dump_len, do_hexdump=(not (args.fn2 or args.all)))

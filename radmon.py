@@ -16,17 +16,13 @@ might do something funny
 run at max rate
 '''
 
-from uvscada import gxs700
-from uvscada import gxs700_util
-from uvscada import util
+from gxs700 import usbint
+import gxs700.util
 import time
 import struct
 
 import argparse
-import glob
 import os
-import PIL.ImageOps
-import binascii
 import json
 
 def bufavg(buff):
@@ -48,7 +44,7 @@ class RadMon(object):
         self.triggered = None
         self.fout = fout
 
-        _usbcontext, _dev, self.gxs = gxs700_util.ez_open_ex(verbose=args.verbose)
+        _usbcontext, _dev, self.gxs = gxs700.util.ez_open_ex(verbose=args.verbose)
         self.gxs.do_printm = False
 
     def run(self):

@@ -18,7 +18,7 @@ give it a try...
 
 from PIL import Image
 import binascii
-from uvscada.gxs700_util import histeq
+from gxs700.util import histeq
 
 MAGIC = '\x42\x05\xa4\x06'
 

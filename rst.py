@@ -7,13 +7,9 @@ Related tools:
 # https://github.com/vpelletier/python-libusb1
 # Python-ish (classes, exceptions, ...) wrapper around libusb1.py . See docstrings (pydoc recommended) for usage.
 import usb1
-# Bare ctype wrapper, inspired from library C header file.
-import libusb1
 import binascii
-import sys
 import argparse
-from util import hexdump
-from util import open_dev
+from gxs700.util import open_dev
 
 verbose = False
 
@@ -43,4 +39,3 @@ if __name__ == "__main__":
     rst(dev, 1)
     # Start running by writing a 0 to that address. 
     rst(dev, 0)
-

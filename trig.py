@@ -1,4 +1,4 @@
-from uvscada import gxs700_util
+import gxs700.util
 from uvscada import util
 
 import argparse
@@ -11,7 +11,7 @@ if __name__ == "__main__":
     parser.add_argument('dout', nargs='?', default='dump', help='File out')
     args = parser.parse_args()
 
-    usbcontext, dev, gxs = gxs700_util.ez_open_ex()
+    usbcontext, dev, gxs = gxs700.util.ez_open_ex()
     
     print
     print 'Versions'

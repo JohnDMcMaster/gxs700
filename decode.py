@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from gxs700 import gxs700
+from gxs700 import usbint
 
 import argparse
 import os
@@ -10,7 +10,7 @@ def process_bin(fin, fout):
     print 'Reading %s...' % fin
     buff = open(fin, 'r').read()
     print 'Decoding image...'
-    img = gxs700.GXS700.decode(buff)
+    img = usbint.GXS700.decode(buff)
     print 'Saving %s...' % fout
     img.save(fout)
 

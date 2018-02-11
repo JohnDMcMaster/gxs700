@@ -173,7 +173,7 @@ def dump(fin):
 if __name__ == "__main__":
     import argparse 
     
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(description='Convert USB .cap into gxs700 API calls')
     parser.add_argument('--usbrply', default='usbrply')
     # Original capture was per USB port, making sense to count resets and assume all packets are for device
     # New set is full system, so instead filter by device ID

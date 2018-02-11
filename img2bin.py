@@ -2,11 +2,11 @@
 import argparse
 import Image
 
-from uvscada import gxs700
+from gxs700 import usbint
 
 def run(fin, fout):
     im = Image.open(fin)
-    b = gxs700.im2bin(im)
+    b = usbint.im2bin(im)
     open(fout, 'w').write(b)
 
 if __name__ == "__main__":
