@@ -20,11 +20,14 @@ import os
 import threading
 import pycurl
 import time
+import sys
 
-from uvscada.gxs700_util import open_dev, IOTimestamp, IOLog
+# XXX: this was removed in favor of LinuxCNC
+# Code needs to be ported
 from uvscada.pr0ndexer import Indexer
-from uvscada import gxs700
-from uvscada import gxs700_util
+import gxs700.usbint
+import gxs700.util
+from uvscada.util import IOTimestamp, IOLog
 
 SW_HV = 1
 SW_FIL = 2
@@ -46,7 +49,7 @@ if __name__ == "__main__":
     if os.getenv('WPS7_PASS', None) is None:
         raise Exception("Requires WPS7 password")
 
-    usbcontext, dev, gxs = gxs700_util.ez_open_ex(verbose=args.verbose)
+    usbcontext, dev, gxs = gxs700.util.ez_open_ex(verbose=args.verbose)
     
     fn = ''
 
@@ -116,7 +119,7 @@ if __name__ == "__main__":
 
             fn = '%s/ct_%03d.png' % (fn_d, imagen)
             print 'Decoding %s' % fn
-            img = gxs700.GXS700.decode(imgb)
+            img = gxs700.usbint.GXS700.decode(imgb)
             print 'Writing %s' % fn
             img.save(fn)
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from uvscada import gxs700
+from gxs700 import gxs700
 
 import argparse
 import os

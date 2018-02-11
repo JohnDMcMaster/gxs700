@@ -1,10 +1,15 @@
+'''
+Low level USB interface
+TODO: move all decoding out of here
+'''
+
 import struct
 from PIL import Image
 import PIL.ImageOps
 import sys
 import time
 
-import gxs700_fpga
+import fpga
 
 '''
 in many cases index and length are ignored
@@ -429,7 +434,14 @@ class GXS700:
         
         See https://siliconpr0n.org/nuc/doku.php?id=gendex:gxs700#pattern_generator
         '''
-        self.dev.controlWrite(0x40, 0xB0, 0x21, cap_mode2i(mode), '\x00')
+        #if not mode in (0, 5):
+        if type(mode) in (str, unicode):
+            modei = cm_s2i[mode]
+        else:
+            modei = mode
+        if not modei in cm_i2s:
+            raise Exception('Invalid mode: %d' % modei)
+        self.dev.controlWrite(0x40, 0xB0, 0x21, modei, '\x00')
 
     def trig_param_r(self):
         '''Read trigger parameter'''
@@ -534,13 +546,13 @@ class GXS700:
             print "WARNING: bad FPGA read: 0x%04X" % v
         self.chk_fpga_rsig()
 
-        {1: gxs700_fpga.setup_fpga1_sm,
-         2: gxs700_fpga.setup_fpga1_lg}[self.size](self)
+        {1: fpga.setup_fpga1_sm,
+         2: fpga.setup_fpga1_lg}[self.size](self)
 
         self.chk_fpga_rsig()
 
-        {1: gxs700_fpga.setup_fpga2_sm,
-         2: gxs700_fpga.setup_fpga2_lg}[self.size](self)
+        {1: fpga.setup_fpga2_sm,
+         2: fpga.setup_fpga2_lg}[self.size](self)
 
         self.fpga_w(0x2002, 0x0001)
         v = self.fpga_r(0x2002)

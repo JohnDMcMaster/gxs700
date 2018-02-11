@@ -1,8 +1,12 @@
-import gxs700_fw
-import gxs700
+import fw
+import usbint
+import sys
+import datetime
+import shutil
 
+import PIL
 from PIL import Image
-import PIL.ImageOps
+#import PIL.ImageOps
 
 # https://github.com/vpelletier/python-libusb1
 # Python-ish (classes, exceptions, ...) wrapper around libusb1.py . See docstrings (pydoc recommended) for usage.
@@ -21,7 +25,7 @@ def check_device(usbcontext=None, verbose=True):
         pid = udev.getProductID()
 
         try:
-            desc, _size = gxs700_fw.pidvid2name_post[(vid, pid)]
+            desc, _size = fw.pidvid2name_post[(vid, pid)]
         except KeyError:
             continue
 
@@ -48,7 +52,7 @@ def open_dev(usbcontext=None, verbose=None):
         usbcontext = usb1.USBContext()
 
     print 'Checking if firmware load is needed'
-    if gxs700_fw.load_all(wait=True, verbose=verbose):
+    if fw.load_all(wait=True, verbose=verbose):
         print 'Loaded firmware'
     else:
         print 'Firmware load not needed'
@@ -68,9 +72,9 @@ def ez_open_ex(verbose=False, init=True):
     # FW load should indicate size
     vid = dev.getDevice().getVendorID()
     pid = dev.getDevice().getProductID()
-    _desc, size = gxs700_fw.pidvid2name_post[(vid, pid)]
+    _desc, size = fw.pidvid2name_post[(vid, pid)]
 
-    return usbcontext, dev, gxs700.GXS700(usbcontext, dev, verbose=verbose, size=size, init=init)
+    return usbcontext, dev, usbint.GXS700(usbcontext, dev, verbose=verbose, size=size, init=init)
 
 def ez_open(verbose=False):
     _usbcontext, _dev, gxs700 = ez_open_ex(verbose)
@@ -79,7 +83,7 @@ def ez_open(verbose=False):
 def raw2npim1(buff):
     '''Given raw string, return 1d array of 16 bit unpacked values'''
     depth = 2
-    width, height = gxs700.sz_wh(len(buff))
+    width, height = usbint.sz_wh(len(buff))
 
     buff = bytearray(buff)
     imnp =  np.zeros(width * height)
@@ -132,7 +136,7 @@ def decode_i16(buff, wh=None):
     '''
     Given raw bin return PIL image object
     '''
-    width, height = wh or gxs700.sz_wh(len(buff))
+    width, height = wh or usbint.sz_wh(len(buff))
     buff = str(buff[0:2 * width * height])
 
     im = Image.frombytes('I', (width, height), buff, "raw", "I;16", 0, -1)
@@ -178,3 +182,126 @@ def sn_flash_r(gxs):
 def sn_eeprom_r(gxs):
     s = gxs.eeprom_r(addr=0x40, n=11).replace('\x00', '')
     return int(s)
+
+def add_bool_arg(parser, yes_arg, default=False, **kwargs):
+    dashed = yes_arg.replace('--', '')
+    dest = dashed.replace('-', '_')
+    parser.add_argument(yes_arg, dest=dest, action='store_true', default=default, **kwargs)
+    parser.add_argument('--no-' + dashed, dest=dest, action='store_false', **kwargs)
+
+def hexdump(data, label=None, indent='', address_width=8, f=sys.stdout):
+    def isprint(c):
+        return c >= ' ' and c <= '~'
+
+    if label:
+        print label
+    
+    bytes_per_half_row = 8
+    bytes_per_row = 16
+    data = bytearray(data)
+    data_len = len(data)
+    
+    def hexdump_half_row(start):
+        left = max(data_len - start, 0)
+        
+        real_data = min(bytes_per_half_row, left)
+
+        f.write(''.join('%02X ' % c for c in data[start:start+real_data]))
+        f.write(''.join('   '*(bytes_per_half_row-real_data)))
+        f.write(' ')
+
+        return start + bytes_per_half_row
+
+    pos = 0
+    while pos < data_len:
+        row_start = pos
+        f.write(indent)
+        if address_width:
+            f.write(('%%0%dX  ' % address_width) % pos)
+        pos = hexdump_half_row(pos)
+        pos = hexdump_half_row(pos)
+        f.write("|")
+        # Char view
+        left = data_len - row_start
+        real_data = min(bytes_per_row, left)
+
+        f.write(''.join([c if isprint(c) else '.' for c in str(data[row_start:row_start+real_data])]))
+        f.write((" " * (bytes_per_row - real_data)) + "|\n")
+
+# Print timestamps in front of all output messages
+class IOTimestamp(object):
+    def __init__(self, obj=sys, name='stdout'):
+        self.obj = obj
+        self.name = name
+        
+        self.fd = obj.__dict__[name]
+        obj.__dict__[name] = self
+        self.nl = True
+
+    def __del__(self):
+        if self.obj:
+            self.obj.__dict__[self.name] = self.fd
+
+    def flush(self):
+        self.fd.flush()
+       
+    def write(self, data):
+        parts = data.split('\n')
+        for i, part in enumerate(parts):
+            if i != 0:
+                self.fd.write('\n')
+            # If last bit of text is just an empty line don't append date until text is actually written
+            if i == len(parts) - 1 and len(part) == 0:
+                break
+            if self.nl:
+                self.fd.write('%s: ' % datetime.datetime.utcnow().isoformat())
+            self.fd.write(part)
+            # Newline results in n + 1 list elements
+            # The last element has no newline
+            self.nl = i != (len(parts) - 1)
+
+# Log file descriptor to file
+class IOLog(object):
+    def __init__(self, obj=sys, name='stdout', out_fn=None, out_fd=None, mode='a', shift=False, multi=False):
+        if not multi:
+            if out_fd:
+                self.out_fd = out_fd
+            else:
+                self.out_fd = open(out_fn, 'w')
+        else:
+            # instead of jamming logs together, shift last to log.txt.1, etc
+            if shift and os.path.exists(out_fn):
+                i = 0
+                while True:
+                    dst = out_fn + '.' + str(i)
+                    if os.path.exists(dst):
+                        i += 1
+                        continue
+                    shutil.move(out_fn, dst)
+                    break
+            
+            hdr = mode == 'a' and os.path.exists(out_fn)
+            self.out_fd = open(out_fn, mode)
+            if hdr:
+                self.out_fd.write('*' * 80 + '\n')
+                self.out_fd.write('*' * 80 + '\n')
+                self.out_fd.write('*' * 80 + '\n')
+                self.out_fd.write('Log rolled over\n')
+        
+        self.obj = obj
+        self.name = name
+        
+        self.fd = obj.__dict__[name]
+        obj.__dict__[name] = self
+        self.nl = True
+
+    def __del__(self):
+        if self.obj:
+            self.obj.__dict__[self.name] = self.fd
+
+    def flush(self):
+        self.fd.flush()
+       
+    def write(self, data):
+        self.fd.write(data)
+        self.out_fd.write(data)

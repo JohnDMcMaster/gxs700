@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
-from uvscada import gxs700
-from uvscada import gxs700_util
-from uvscada import util
+from gxs700 import usbint
+from gxs700 import util
 
 import argparse
 import glob
@@ -14,9 +13,9 @@ kvp_user = None
 ma_user = None
 
 def meta(gxs):
-    sn_flash = gxs700_util.sn_flash_r(gxs)
+    sn_flash = util.sn_flash_r(gxs)
     try:
-        sn_eeprom = gxs700_util.sn_eeprom_r(gxs)
+        sn_eeprom = util.sn_eeprom_r(gxs)
     except:
         sn_eeprom = None
 
@@ -26,7 +25,7 @@ def meta(gxs):
         'sn_eeprom': sn_eeprom,
         'int_time': gxs.int_time(),
         'trig_params': binascii.hexlify(gxs.trig_param_r()),
-        'mode': gxs700.cap_mode2s(gxs.cap_mode)
+        'mode': usbint.cap_mode2s(gxs.cap_mode)
         }
 
 def run(force,
@@ -51,16 +50,16 @@ def run(force,
         if args.png:
             pngfn = base + '.png'
             print 'Decoding image...'
-            img = gxs700.GXS700.decode(imgb)
+            img = usbint.GXS700.decode(imgb)
             print 'Writing %s...' % pngfn
             img.save(pngfn)
 
         if args.hist_eq:
             pngfn = base + '_e.png'
             print 'Equalizing histogram...'
-            imgb = gxs700_util.histeq(imgb)
+            imgb = util.histeq(imgb)
             print 'Decoding image...'
-            img = gxs700.GXS700.decode(imgb)
+            img = usbint.GXS700.decode(imgb)
             print 'Writing %s...' % pngfn
             img.save(pngfn)
 
@@ -80,7 +79,7 @@ def run(force,
 
         imagen[0] += 1
 
-    _usbcontext, _dev, gxs = gxs700_util.ez_open_ex(verbose=args.verbose, init=False)
+    _usbcontext, _dev, gxs = util.ez_open_ex(verbose=args.verbose, init=False)
 
     if cap_mode:
         gxs.cap_mode = cap_mode

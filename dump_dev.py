@@ -1,5 +1,4 @@
-from uvscada import gxs700_util
-from uvscada import util
+from gxs700 import util
 
 import argparse
 import binascii
@@ -14,11 +13,11 @@ if __name__ == "__main__":
     parser.add_argument('dout', nargs='?', default=None, help='File out')
     args = parser.parse_args()
 
-    usbcontext, dev, gxs = gxs700_util.ez_open_ex(verbose=args.verbose)
+    usbcontext, dev, gxs = util.ez_open_ex(verbose=args.verbose)
 
-    sn_flash = gxs700_util.sn_flash_r(gxs)
+    sn_flash = util.sn_flash_r(gxs)
     try:
-        sn_eeprom = gxs700_util.sn_eeprom_r(gxs)
+        sn_eeprom = util.sn_eeprom_r(gxs)
     except:
         sn_eeprom = None
     print 'S/N (flash): %s' % sn_flash
@@ -104,7 +103,7 @@ if __name__ == "__main__":
         The available RAM spaces are 8 kbytes from
         0x0000-0x1FFF (code/data) and 512 bytes from 0xE000-0xE1FF (scratch pad RAM).
         '''
-        ram = gxs700_util.ram_r(dev, 0x0000, 0x10000)
+        ram = util.ram_r(dev, 0x0000, 0x10000)
         open(os.path.join(dout, 'ram.bin'), 'w').write(ram)
 
     if alll or args.eeprom:

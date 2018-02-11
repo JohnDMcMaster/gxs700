@@ -5,15 +5,12 @@ FIXME: extract firmware from this and properly pass it to fxload
 # https://github.com/vpelletier/python-libusb1
 # Python-ish (classes, exceptions, ...) wrapper around libusb1.py . See docstrings (pydoc recommended) for usage.
 import usb1
-# Bare ctype wrapper, inspired from library C header file.
-import libusb1
-import binascii
-import sys
 import argparse
 import time
-import gxs700_util
-import gxs700_fw_sm
-import gxs700_fw_lg
+
+import util
+import fw_sm
+import fw_lg
 
 '''
 small sensor from adam
@@ -32,12 +29,12 @@ Bus 003 Device 036: ID 5328:2010
 '''
 pidvid2name_pre = {
         # (vid, pid): (desc, firmware load)
-        (0x5328, 0x2009): ('Dexis Platinum (pre-enumeration)', gxs700_fw_lg),
-        (0x5328, 0x201F): ('Gendex GXS700SM (pre-enumeration)', gxs700_fw_sm),
-        (0x5328, 0x202F): ('Gendex GXS700LG (pre-enumeration)', gxs700_fw_lg),
+        (0x5328, 0x2009): ('Dexis Platinum (pre-enumeration)', fw_lg),
+        (0x5328, 0x201F): ('Gendex GXS700SM (pre-enumeration)', fw_sm),
+        (0x5328, 0x202F): ('Gendex GXS700LG (pre-enumeration)', fw_lg),
         # ooops
         # Bus 002 Device 043: ID 04b4:8613 Cypress Semiconductor Corp. CY7C68013 EZ-USB FX2 USB 2.0 Development Kit
-        (0x04b4, 0x8613): ('CY7C68013 EZ-USB FX2 USB 2.0 Development Kit', gxs700_fw_lg),
+        (0x04b4, 0x8613): ('CY7C68013 EZ-USB FX2 USB 2.0 Development Kit', fw_lg),
         }
 
 pidvid2name_post = {
@@ -81,7 +78,7 @@ def load_all(wait=False, verbose=True):
         print 'Waiting for device to come up'
         tstart = time.time()
         while time.time() - tstart < 3.0:
-            udev = gxs700_util.check_device()
+            udev = util.check_device()
             if udev:
                 break
         else:
@@ -90,7 +87,7 @@ def load_all(wait=False, verbose=True):
 
     return ret
 
-def load(dev, fwmod=gxs700_fw_lg):
+def load(dev, fwmod=fw_lg):
     # Source data: cap1.cap
     # Source range: 107 - 286
     
