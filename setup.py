@@ -1,0 +1,83 @@
+'''
+from distutils.core import setup
+
+with open('README') as file:
+    long_description = file.read()
+
+setup(name='gxs700',
+    version='1.0',
+    comment='Gendex GXS700 / Dexis Platinum USB x-ray sensor driver',
+    description='Gendex GXS700 / Dexis Platinum USB x-ray sensor driver',
+    long_description = long_description,
+    package_dir={
+            'gxs700': 'lib/gxs700',
+            },
+    packages=[
+            'gxs700',
+			'gxs700.fpga.py',
+			'gxs700.fw_lg.py',
+			'gxs700.fw.py',
+			'gxs700.fw_sm.py',
+			'gxs700.usbint.py',
+			'gxs700.util.py',
+            ],
+    scripts=[
+            'capture.py',
+            'dump_dev.py',
+            ],
+    author='John McMaster',
+    author_email='JohnDMcMaster@gmail.com',
+    url='https://github.com/JohnDMcMaster/gxs700',
+)
+'''
+
+import os
+from setuptools import setup
+import shutil
+
+# Utility function to read the README file.
+# Used for the long_description.  It's nice, because now 1) we have a top level
+# README file and 2) it's easier to type in the README file than to put a raw
+# string in below ...
+def read(fname):
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
+if not os.path.exists('build'):
+    os.mkdir('build')
+scripts = (
+    'capture.py',
+    'decode.py',
+    'dump_dev.py',
+    'hist_eq.py',
+    'hist_eq_dir.py',
+    'img2bin.py',
+    'mask.py',
+    #'prog_eeprom.py',
+    #'restore_dev.py',
+    )
+scripts_dist = []
+for script in scripts:
+    # Make script names more executable like
+    dst = 'build/gxs700-' + script.replace('.py', '').replace('_', '-')
+    shutil.copy(script, dst)
+    scripts_dist.append(dst)
+
+setup(
+    name = "gxs700",
+    version = "1.0",
+    author = "John McMaster",
+    author_email='JohnDMcMaster@gmail.com',
+    description = ("Gendex GXS700 / Dexis Platinum USB x-ray sensor driver."),
+    license = "BSD",
+    keywords = "gxs700 gendex dexis x-ray",
+    url='https://github.com/JohnDMcMaster/gxs700',
+    packages=['gxs700'],
+    scripts=scripts_dist,
+    install_requires=[
+        'libusb1',
+    ],
+    long_description=read('README.txt'),
+    classifiers=[
+        "License :: OSI Approved :: BSD License",
+    ],
+)

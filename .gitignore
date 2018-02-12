@@ -1,0 +1,6 @@
+*.pyc
+*.bin
+*.png
+*.egg-info
+build
+
