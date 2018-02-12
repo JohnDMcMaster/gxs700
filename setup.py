@@ -1,36 +1,3 @@
-'''
-from distutils.core import setup
-
-with open('README') as file:
-    long_description = file.read()
-
-setup(name='gxs700',
-    version='1.0',
-    comment='Gendex GXS700 / Dexis Platinum USB x-ray sensor driver',
-    description='Gendex GXS700 / Dexis Platinum USB x-ray sensor driver',
-    long_description = long_description,
-    package_dir={
-            'gxs700': 'lib/gxs700',
-            },
-    packages=[
-            'gxs700',
-			'gxs700.fpga.py',
-			'gxs700.fw_lg.py',
-			'gxs700.fw.py',
-			'gxs700.fw_sm.py',
-			'gxs700.usbint.py',
-			'gxs700.util.py',
-            ],
-    scripts=[
-            'capture.py',
-            'dump_dev.py',
-            ],
-    author='John McMaster',
-    author_email='JohnDMcMaster@gmail.com',
-    url='https://github.com/JohnDMcMaster/gxs700',
-)
-'''
-
 import os
 from setuptools import setup
 import shutil
