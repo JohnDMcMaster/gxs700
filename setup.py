@@ -64,7 +64,7 @@ for script in scripts:
 
 setup(
     name = "gxs700",
-    version = "1.0",
+    version = "1.0.0",
     author = "John McMaster",
     author_email='JohnDMcMaster@gmail.com',
     description = ("Gendex GXS700 / Dexis Platinum USB x-ray sensor driver."),

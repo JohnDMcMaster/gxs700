@@ -3,4 +3,4 @@
 *.png
 *.egg-info
 build
-
+dist
