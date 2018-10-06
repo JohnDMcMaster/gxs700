@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import argparse
-import Image
+from PIL import Image
 
 from gxs700 import usbint
 
