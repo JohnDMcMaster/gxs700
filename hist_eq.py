@@ -2,7 +2,7 @@
 import argparse
 import os
 import glob
-import Image
+from PIL import Image
 
 import gxs700.util
 

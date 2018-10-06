@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import Image
+from PIL import Image
 import numpy as np
 import glob
 import os
