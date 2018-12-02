@@ -3,6 +3,7 @@ import usbint
 import sys
 import datetime
 import shutil
+import struct
 
 import PIL
 from PIL import Image
@@ -15,6 +16,9 @@ import usb1
 import numpy as np
 import struct
 import os
+
+unpack_pix = lambda x: struct.Struct('<H').unpack(x)[0]
+pack_pix = struct.Struct('<H').pack
 
 def check_device(usbcontext=None, verbose=True):
     if usbcontext is None:
@@ -87,15 +91,9 @@ def raw2npim1(buff):
 
     buff = bytearray(buff)
     imnp =  np.zeros(width * height)
-    i = 0
-    for y in range(height):
-        line0 = buff[y * width * depth:(y + 1) * width * depth]
-        for x in range(width):
-            b0 = line0[2*x + 0]
-            b1 = line0[2*x + 1]
-
-            imnp[i] = (b1 << 8) + b0
-            i += 1
+    
+    for i, y in enumerate(range(0, depth * width * height, depth)):
+        imnp[i] = unpack_pix(buff[y:y+2])
     return imnp
 
 def histeq_np(npim, nbr_bins=256):
@@ -118,8 +116,9 @@ def npim12raw(rs):
     Given a numpy 1D array of pixels, return a string as if a raw capture
     '''
     ret = bytearray()
+    
     for i in xrange(len(rs)):
-        ret += struct.pack('>H', int(rs[i]))
+        ret += pack_pix(int(rs[i]))
     return str(ret)
 
 # Tried misc other things but this was only thing I could make work
@@ -137,8 +136,11 @@ def decode_i16(buff, wh=None):
     Given raw bin return PIL image object
     '''
     width, height = wh or usbint.sz_wh(len(buff))
+    # Some older files had extra data
+    # Consider removing in favor of just truncating the files on disk
     buff = str(buff[0:2 * width * height])
 
+    # TODO: currently flipping image to preserve original behavior, but probably shouldn't be
     im = Image.frombytes('I', (width, height), buff, "raw", "I;16", 0, -1)
     # IOError: not supported for this image mode
     # im =  PIL.ImageOps.invert(im)
