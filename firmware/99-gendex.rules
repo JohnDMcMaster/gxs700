@@ -1,0 +1,24 @@
+# Gendex Dental X-Ray sensor
+
+# Gendex I (GXS-700 "Small") Devices
+
+# Before firmware load
+SUBSYSTEM=="usb", ACTION=="add", ATTRS{idVendor}=="5328", ATTRS{idProduct}=="201f", RUN+="/sbin/fxload -v -t fx2lp -s /lib/firmware/gx_bootloader.ihx -I /lib/firmware/gx_i_firmware.ihx -D $devnode"
+# After successful firmware load
+SUBSYSTEM=="usb", ACTION=="add", ATTRS{idVendor}=="5328", ATTRS{idProduct}=="2020", MODE="0666"
+
+# Gendex II (GXS-700 "Large") Devices
+
+# Before firmware load
+SUBSYSTEM=="usb", ACTION=="add", ATTRS{idVendor}=="5328", ATTRS{idProduct}=="202f", RUN+="/sbin/fxload -v -t fx2lp -s /lib/firmware/gx_bootloader.ihx -I /lib/firmware/gx_ii_firmware.ihx -D $devnode"
+# After Successful firmware load
+SUBSYSTEM=="usb", ACTION=="add", ATTRS{idVendor}=="5328", ATTRS{idProduct}=="2030", MODE="0666"
+
+# Dexis Platinum Devices
+
+# Before firmware load
+SUBSYSTEM=="usb", ACTION=="add", ATTRS{idVendor}=="5328", ATTRS{idProduct}=="2009", RUN+="/sbin/fxload -v -t fx2lp -s /lib/firmware/gx_bootloader.ihx -I /lib/firmware/gx_ii_firmware.ihx -D $devnode"
+
+# After Successful firmware load
+SUBSYSTEM=="usb", ACTION=="add", ATTRS{idVendor}=="5328", ATTRS{idProduct}=="2010", MODE="0666"
+
