@@ -19,6 +19,7 @@ scripts = (
     'hist_eq_dir.py',
     'img2bin.py',
     'mask.py',
+    'cal.py',
     #'prog_eeprom.py',
     #'restore_dev.py',
     )
