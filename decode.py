@@ -27,7 +27,7 @@ if __name__ == "__main__":
             os.mkdir(args.fout)
         for fn in glob.glob(os.path.join(args.fin, '*.bin')):
             fout = os.path.join(args.fout, os.path.basename(fn).replace('.bin', '.png'))
-            process_bin(fn, fout, hist_eq=args.hist_eq)
+            process_bin(fn, fout)
     else:
         fout = args.fout
         if fout is None:
