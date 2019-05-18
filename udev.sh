@@ -6,7 +6,7 @@
 # did not do it automatically, did not work either:
 # sudo udevadm control --reload-rules
 
-file=/etc/udev/rules.d/99-gendis.rules
+file=/etc/udev/rules.d/99-gxs700.rules
 echo "Updating $file"
 
 # Note old udev rules were like 
