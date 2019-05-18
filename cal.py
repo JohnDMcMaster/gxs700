@@ -5,16 +5,19 @@ import numpy as np
 import glob
 import os
 
+
 def dir2np(d):
     np_df2s = []
     for fn in glob.glob(d + '/*.png'):
         np_df2s.append(np.array(Image.open(fn)))
     return np.average(np_df2s)
 
+
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='Correct images against darkfield and flat field capture')
+    parser = argparse.ArgumentParser(
+        description='Correct images against darkfield and flat field capture')
     parser.add_argument('--verbose', '-v', action='store_true', help='verbose')
     parser.add_argument('df_png', help='Dark field .png ("force capture")')
     parser.add_argument('ff_png', help='Flat field .png ("no sample")')
