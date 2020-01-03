@@ -32,14 +32,18 @@ from uvscada.util import IOTimestamp, IOLog
 SW_HV = 1
 SW_FIL = 2
 
+
 def switch(n, on):
     state = 'ON' if on else 'OFF'
     c = pycurl.Curl()
     c.setopt(c.URL, 'http://energon/outlet?%d=%s' % (n, state))
     c.setopt(c.WRITEDATA, open('/dev/null', 'w'))
-    c.setopt(pycurl.USERPWD, '%s:%s' % (os.getenv('WPS7_USER', 'admin'), os.getenv('WPS7_PASS', '')))
+    c.setopt(
+        pycurl.USERPWD, '%s:%s' % (os.getenv('WPS7_USER', 'admin'),
+                                   os.getenv('WPS7_PASS', '')))
     c.perform()
     c.close()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Replay captured USB packets')
@@ -50,14 +54,13 @@ if __name__ == "__main__":
         raise Exception("Requires WPS7 password")
 
     usbcontext, dev, gxs = gxs700.util.ez_open_ex(verbose=args.verbose)
-    
+
     fn = ''
 
     print 'Warming filament...'
     switch(SW_FIL, 1)
     time.sleep(5)
     fire_last = 0
-
     '''
     Head likes 10% duty cycle
     3 second pulses
@@ -76,7 +79,7 @@ if __name__ == "__main__":
     to_take = 1
     IMG_STEPS = 1280
     indexer = Indexer(device='/dev/ttyUSB0')
-    
+
     if 0:
         indexer.step('X', IMG_STEPS)
         sys.exit(1)
@@ -89,16 +92,17 @@ if __name__ == "__main__":
             ctn += 1
         fn_d = 'ct_%03d' % ctn
         os.mkdir(fn_d)
-        print 'Taking first image to %s' % ('%s/ct_%03d.bin' % (fn_d, imagen),)
-        
+        print 'Taking first image to %s' % ('%s/ct_%03d.bin' %
+                                            (fn_d, imagen), )
+
         def fire():
             global fire_last
-            
+
             print 'Waiting for head to cool...'
             while time.time() - fire_last < 30:
                 time.sleep(0.1)
             print 'Head ready'
-            
+
             print 'X-RAY: BEAM ON'
             switch(SW_HV, 1)
             fire_last = time.time()
@@ -106,13 +110,13 @@ if __name__ == "__main__":
 
             print 'X-RAY: BEAM OFF'
             switch(SW_HV, 0)
-        
+
         gxs.wait_trig_cb = fire
-        
+
         def cap_cb(imgb):
             global taken
             global imagen
-            
+
             fn = '%s/ct_%03d.bin' % (fn_d, imagen)
             print 'Writing %s' % fn
             open(fn, 'w').write(imgb)
@@ -125,9 +129,9 @@ if __name__ == "__main__":
 
             taken += 1
             imagen += 1
-            
+
             return taken != to_take
-        
+
         def loop_cb():
             print 'TABLE: rotating'
             indexer.step('X', IMG_STEPS)
@@ -139,9 +143,8 @@ if __name__ == "__main__":
         try:
             switch(SW_HV, 0)
         except:
-            print '*'* 80
+            print '*' * 80
             print 'WARNING: FAILED TO DISARM X-RAY!!!'
-            print '*'* 80
+            print '*' * 80
 
     print 'Done'
-

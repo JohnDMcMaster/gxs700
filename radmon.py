@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 '''
 x-ray camera based radiation montior
 I'm flying from Taipei to Tokyo and happen to have a sensor on me
@@ -25,16 +24,18 @@ import argparse
 import os
 import json
 
+
 def bufavg(buff):
     '''
     Given 16 bit LE packed data, return average value
     '''
     val = 0.0
     for i in xrange(0, len(buff), 2):
-        raw = buff[i:i+2]
+        raw = buff[i:i + 2]
         val += struct.unpack('<H', raw)[0]
     print 'net', val
     return val / len(buff) / 2
+
 
 class RadMon(object):
     def __init__(self, fout):
@@ -44,7 +45,8 @@ class RadMon(object):
         self.triggered = None
         self.fout = fout
 
-        _usbcontext, _dev, self.gxs = gxs700.util.ez_open_ex(verbose=args.verbose)
+        _usbcontext, _dev, self.gxs = gxs700.util.ez_open_ex(
+            verbose=args.verbose)
         self.gxs.do_printm = False
 
     def run(self):
@@ -75,6 +77,7 @@ class RadMon(object):
             json.dump(j, f)
             f.write('\n')
             f.flush()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Replay captured USB packets')

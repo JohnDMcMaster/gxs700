@@ -12,18 +12,18 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     usbcontext, dev, gxs = gxs700.util.ez_open_ex()
-    
+
     print
     print 'Versions'
     gxs.versions()
-    
+
     print
     print 'FPGA signature: 0x%04X' % gxs.fpga_rsig()
     print 'State: %d' % gxs.state()
     print 'Error: %d' % gxs.error()
     print 'Int time: %s' % gxs.int_time()
     print 'Img ctr: %s' % binascii.hexlify(gxs.img_ctr_r())
-        
+
     w, h = gxs.img_wh()
     print 'Sensor dimensions: %dw x %dh' % (w, h)
 

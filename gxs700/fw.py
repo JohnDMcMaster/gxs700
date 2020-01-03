@@ -11,7 +11,6 @@ import time
 import util
 import fw_sm
 import fw_lg
-
 '''
 small sensor from adam
 both large and small enumerate the same
@@ -28,22 +27,23 @@ post-enumeration
 Bus 003 Device 036: ID 5328:2010  
 '''
 pidvid2name_pre = {
-        # (vid, pid): (desc, firmware load)
-        (0x5328, 0x2009): ('Dexis Platinum (pre-enumeration)', fw_lg),
-        (0x5328, 0x201F): ('Gendex GXS700SM (pre-enumeration)', fw_sm),
-        (0x5328, 0x202F): ('Gendex GXS700LG (pre-enumeration)', fw_lg),
-        # ooops
-        # Bus 002 Device 043: ID 04b4:8613 Cypress Semiconductor Corp. CY7C68013 EZ-USB FX2 USB 2.0 Development Kit
-        (0x04b4, 0x8613): ('CY7C68013 EZ-USB FX2 USB 2.0 Development Kit', fw_lg),
-        }
+    # (vid, pid): (desc, firmware load)
+    (0x5328, 0x2009): ('Dexis Platinum (pre-enumeration)', fw_lg),
+    (0x5328, 0x201F): ('Gendex GXS700SM (pre-enumeration)', fw_sm),
+    (0x5328, 0x202F): ('Gendex GXS700LG (pre-enumeration)', fw_lg),
+    # ooops
+    # Bus 002 Device 043: ID 04b4:8613 Cypress Semiconductor Corp. CY7C68013 EZ-USB FX2 USB 2.0 Development Kit
+    (0x04b4, 0x8613): ('CY7C68013 EZ-USB FX2 USB 2.0 Development Kit', fw_lg),
+}
 
 pidvid2name_post = {
-        # note: load_firmware.py deals with pre-enumeration
-        # (vid, pid): (desc, size)
-        (0x5328, 0x2010): ('Dexis Platinum (post-enumeration)', 2),
-        (0x5328, 0x2020): ('Gendex GXS700SM (post enumeration)', 1),
-        (0x5328, 0x2030): ('Gendex GXS700LG (post enumeration)', 2),
-        }
+    # note: load_firmware.py deals with pre-enumeration
+    # (vid, pid): (desc, size)
+    (0x5328, 0x2010): ('Dexis Platinum (post-enumeration)', 2),
+    (0x5328, 0x2020): ('Gendex GXS700SM (post enumeration)', 1),
+    (0x5328, 0x2030): ('Gendex GXS700LG (post enumeration)', 2),
+}
+
 
 def load_all(wait=False, verbose=True):
     ret = False
@@ -64,10 +64,7 @@ def load_all(wait=False, verbose=True):
             print
             print 'Found device (pre-FW): %s' % desc
             print 'Bus %03i Device %03i: ID %04x:%04x' % (
-                udev.getBusNumber(),
-                udev.getDeviceAddress(),
-                vid,
-                pid)
+                udev.getBusNumber(), udev.getDeviceAddress(), vid, pid)
             print 'Loading firmware'
         load(udev.open(), fwmod)
         if verbose:
@@ -83,14 +80,15 @@ def load_all(wait=False, verbose=True):
                 break
         else:
             raise Exception("Renumeration timed out")
-        print 'Up after %0.1f sec' % (time.time() - tstart,)
+        print 'Up after %0.1f sec' % (time.time() - tstart, )
 
     return ret
+
 
 def load(dev, fwmod=fw_lg):
     # Source data: cap1.cap
     # Source range: 107 - 286
-    
+
     # 2017-08-07: below comment indicates that I tested small at some point
     # but I don't have a small so I guess never added supported
     # TODO: re-verify this and shrink the code
@@ -98,6 +96,7 @@ def load(dev, fwmod=fw_lg):
     fwmod.stage1(dev)
     # xxx: should sleep here?
     fwmod.stage2(dev)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Replay captured USB packets')

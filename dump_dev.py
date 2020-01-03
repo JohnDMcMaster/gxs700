@@ -7,9 +7,14 @@ import os
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Dump device data')
     parser.add_argument('--verbose', '-v', action='store_true', help='verbose')
-    util.add_bool_arg(parser, '--eeprom', default=False, help='Dump only EEPROM')
+    util.add_bool_arg(
+        parser, '--eeprom', default=False, help='Dump only EEPROM')
     util.add_bool_arg(parser, '--flash', default=False, help='Dump only flash')
-    util.add_bool_arg(parser, '--hexdump', default=False, help='Instead of writing out, just hexdump')
+    util.add_bool_arg(
+        parser,
+        '--hexdump',
+        default=False,
+        help='Instead of writing out, just hexdump')
     parser.add_argument('dout', nargs='?', default=None, help='File out')
     args = parser.parse_args()
 
@@ -56,7 +61,6 @@ if __name__ == "__main__":
         _t = util.IOLog(out_fn=os.path.join(dout, 'out.txt'))
 
     alll = not (args.eeprom or args.flash)
-
     '''
     FIXME: couldn't get I2C to work
     probably doesn't matter since expect only EEPROM on bus
@@ -81,7 +85,8 @@ if __name__ == "__main__":
         print
         print 'Versions'
         gxs.versions()
-        open(os.path.join(dout, 'ver.bin'), 'w').write(gxs.versions(decode=False))
+        open(os.path.join(dout, 'ver.bin'), 'w').write(
+            gxs.versions(decode=False))
 
         print
         print 'FPGA signature: 0x%04X' % gxs.fpga_rsig()
@@ -118,7 +123,7 @@ if __name__ == "__main__":
         print 'Dumping flash'
         flash = gxs.flash_r()
         if args.hexdump:
-                util.hexdump(flash)
+            util.hexdump(flash)
         else:
             open(os.path.join(dout, 'flash.bin'), 'w').write(flash)
 
@@ -137,4 +142,3 @@ if __name__ == "__main__":
             for k in xrange(0x0000, 0x10000, 0x1):
                 v = gxs.fpga_r(k)
                 f.write('0x%04X,0x%04X\n' % (k, v))
-

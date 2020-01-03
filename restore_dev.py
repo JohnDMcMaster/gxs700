@@ -16,7 +16,7 @@ if __name__ == "__main__":
     usbcontext, dev, gxs = gxs700.util.ez_open_ex()
 
     print 'Ready'
-    
+
     if args.eeprom:
         print
         print 'Writing EEPROM'
@@ -24,13 +24,12 @@ if __name__ == "__main__":
         if args.quick:
             eeprom_w = eeprom_w[0:0x400]
         gxs.eeprom_w(0x0000, eeprom_w)
-        
+
         print 'Reading back to verify'
         eeprom_r = gxs.eeprom_r()
         if eeprom_w != eeprom_r:
             raise Exception("Failed to update EEPROM")
         print 'Update OK!'
-
 
     if args.flash:
         print
@@ -45,4 +44,3 @@ if __name__ == "__main__":
         if flash_w != flash_r:
             raise Exception("Failed to update flash")
         print 'Update OK!'
-

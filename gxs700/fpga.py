@@ -110,6 +110,7 @@ def setup_fpga1_sm(self):
     self.fpga_wv2(0x05AC, "\x0A\x00\xFF\x04\x00\x00")
     self.fpga_wv2(0x05B0, "\x08\x00\x04\x04\x00\x09")
 
+
 def setup_fpga2_sm(self):
     self.fpga_wv2(0x1000, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")
     self.fpga_wv2(0x1008, "\x00\x02\x00\x00\x00\x00\x90\x00\x00\x00")
@@ -143,6 +144,7 @@ def setup_fpga2_sm(self):
     self.fpga_wv2(0x10E8, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")
     self.fpga_wv2(0x10F0, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")
     self.fpga_wv2(0x10F8, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")
+
 
 def setup_fpga1_lg(self):
     self.fpga_wv2(0x0400, "\x00\x00\x60\x00\x00\x00")
@@ -261,6 +263,7 @@ def setup_fpga1_lg(self):
     self.fpga_wv2(0x05C4, "\x0A\x80\x87\x00\x00\x00")
     self.fpga_wv2(0x05C8, "\x0A\x00\xFF\x00\x00\x00")
     self.fpga_wv2(0x05CC, "\x08\x00\x04\x00\x00\x09")
+
 
 def setup_fpga2_lg(self):
     self.fpga_wv2(0x1000, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")

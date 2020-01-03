@@ -4,6 +4,7 @@ import numpy as np
 import glob
 import os
 
+
 def histeq_np_create(npim, nbr_bins=256):
     '''
     Given a numpy nD array (ie image), return a histogram equalized numpy nD array of pixels
@@ -11,10 +12,11 @@ def histeq_np_create(npim, nbr_bins=256):
     '''
 
     # get image histogram
-    imhist,bins = np.histogram(npim.flatten(), nbr_bins, normed=True)
-    cdf = imhist.cumsum() #cumulative distribution function
-    cdf = 0xFFFF * cdf / cdf[-1] #normalize
+    imhist, bins = np.histogram(npim.flatten(), nbr_bins, normed=True)
+    cdf = imhist.cumsum()  #cumulative distribution function
+    cdf = 0xFFFF * cdf / cdf[-1]  #normalize
     return cdf, bins
+
 
 def histeq_np_apply(npim, create):
     cdf, bins = create
@@ -23,12 +25,15 @@ def histeq_np_apply(npim, create):
     ret1d = np.interp(npim.flatten(), bins[:-1], cdf)
     return ret1d.reshape(npim.shape)
 
+
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='Histogram equalize an entire directory')
+    parser = argparse.ArgumentParser(
+        description='Histogram equalize an entire directory')
     parser.add_argument('--verbose', '-v', action='store_true', help='verbose')
-    parser.add_argument('ref_png', help='Reference image to use for distribution')
+    parser.add_argument(
+        'ref_png', help='Reference image to use for distribution')
     parser.add_argument('din', help='Input directory or file')
     parser.add_argument('dout', help='Output directory or file')
 

@@ -10,7 +10,6 @@ import sys
 import time
 
 import fpga
-
 '''
 in many cases index and length are ignored
 if you request less it will return a big message anyway, causing an overflow exception
@@ -44,19 +43,20 @@ SIZE_SM = 1
 SIZE_LG = 2
 
 # Capture modes
-CM_NORM =   0
+CM_NORM = 0
 CM_HBLOCK = 1
 CM_VBLOCK = 3
-CM_VBAR =   5
+CM_VBAR = 5
 cm_s2i = {
-    'norm':     CM_NORM,
-    'hblock':   CM_HBLOCK,
-    'vblock':   CM_VBLOCK,
-    'vbar':     CM_VBAR,
-    }
+    'norm': CM_NORM,
+    'hblock': CM_HBLOCK,
+    'vblock': CM_VBLOCK,
+    'vbar': CM_VBAR,
+}
 cm_i2s = {}
 for s, i in cm_s2i.iteritems():
     cm_i2s[i] = s
+
 
 def sz_wh(sz):
     # Was bug capturing too much data, just below two frames
@@ -68,8 +68,10 @@ def sz_wh(sz):
         print SZ_SM, SZ_LG
         raise ValueError("Bad buffer size %s" % sz)
 
+
 def get_bufF_sz(sz):
-    return {1: SZ_SM, 2:SZ_LG}[sz]
+    return {1: SZ_SM, 2: SZ_LG}[sz]
+
 
 def cap_mode2i(mode):
     if type(mode) in (str, unicode):
@@ -80,9 +82,11 @@ def cap_mode2i(mode):
         raise Exception('Invalid mode: %d' % modei)
     return modei
 
+
 def cap_mode2s(mode):
     '''Return string representation of an arbitrary user supplided string or int mode'''
     return cm_i2s[cap_mode2i(mode)]
+
 
 # This sort of works, but gives an 8 bit image
 # Can I get it to work with mode I somehow instead?
@@ -94,10 +98,11 @@ def decode_l8(buff, wh=None):
     # http://pillow.readthedocs.io/en/3.1.x/handbook/writing-your-own-file-decoder.html
     # http://svn.effbot.org/public/tags/pil-1.1.4/libImaging/Unpack.c
     img = Image.frombytes('L', (width, height), buff, "raw", "L;16", 0, -1)
-    img =  PIL.ImageOps.invert(img)
+    img = PIL.ImageOps.invert(img)
     img = img.transpose(PIL.Image.ROTATE_270)
     print img.mode
     return img
+
 
 def decode(buff, wh=None):
     '''Given bin return PIL image object'''
@@ -111,8 +116,8 @@ def decode(buff, wh=None):
     for y in range(height):
         line0 = buff[y * width * depth:(y + 1) * width * depth]
         for x in range(width):
-            b0 = line0[2*x + 0]
-            b1 = line0[2*x + 1]
+            b0 = line0[2 * x + 0]
+            b1 = line0[2 * x + 1]
 
             G = (b1 << 8) + b0
             # optional 16-bit pixel truncation to turn into 8-bit PNG
@@ -125,6 +130,7 @@ def decode(buff, wh=None):
 
             img.putpixel((y, x), G)
     return img
+
 
 def im2bin(im):
     '''Given PIL image object return bin'''
@@ -142,19 +148,29 @@ def im2bin(im):
             b0 = g & 0xFF
             b1 = (g >> 8) & 0xFF
 
-            line0[2*x + 0] = b0
-            line0[2*x + 1] = b1
+            line0[2 * x + 0] = b0
+            line0[2 * x + 1] = b1
         ret += line0
     return ret
+
 
 class GXS700:
     '''
     Size 1: small
     Size 2: large
     '''
-    def __init__(self, usbcontext=None, dev=None, verbose=False, init=True, size=2, do_printm=True,
-                cap_mode=None, int_t=None,
-                 ):
+
+    def __init__(
+            self,
+            usbcontext=None,
+            dev=None,
+            verbose=False,
+            init=True,
+            size=2,
+            do_printm=True,
+            cap_mode=None,
+            int_t=None,
+    ):
         self.verbose = verbose
         self.usbcontext = usbcontext
         self.dev = dev
@@ -188,20 +204,28 @@ class GXS700:
         while i < dump_len:
             l_this = min(dump_len - i, max_read)
 
-            res = self.dev.controlRead(0xC0, 0xB0, req, addr + i, l_this, timeout=self.timeout)
+            res = self.dev.controlRead(
+                0xC0, 0xB0, req, addr + i, l_this, timeout=self.timeout)
             ret += res
             if len(res) != l_this:
-                raise Exception("wanted 0x%04X bytes but got 0x%04X" % (l_this, len(res),))
+                raise Exception("wanted 0x%04X bytes but got 0x%04X" % (
+                    l_this,
+                    len(res),
+                ))
             i += max_read
         return ret
 
     def _controlWrite_mem(self, req, max_write, addr, buff):
         i = 0
         while i < len(buff):
-            this = buff[i:i+max_write]
-            res = self.dev.controlWrite(0x40, 0xB0, req, addr + i, this, timeout=self.timeout)
+            this = buff[i:i + max_write]
+            res = self.dev.controlWrite(
+                0x40, 0xB0, req, addr + i, this, timeout=self.timeout)
             if res != len(this):
-                raise Exception("wanted 0x%04X bytes but got 0x%04X" % (len(this), res,))
+                raise Exception("wanted 0x%04X bytes but got 0x%04X" % (
+                    len(this),
+                    res,
+                ))
             i += max_write
 
     def hw_trig_arm(self):
@@ -217,12 +241,14 @@ class GXS700:
         # 0x0B seems to work as well
         # self.dev.controlRead(0xC0, 0xB0, req, addr + i, l_this, timeout=self.timeout)
         if addr + n > EEPROM_SZ:
-            raise ValueError("Address out of range: 0x%04X > 0x%04X" % (addr + n, EEPROM_SZ))
+            raise ValueError("Address out of range: 0x%04X > 0x%04X" %
+                             (addr + n, EEPROM_SZ))
         return self._controlRead_mem(0x0B, 0x80, addr, n)
 
     def eeprom_w(self, addr, buff):
         if addr + len(buff) > EEPROM_SZ:
-            raise ValueError("Address out of range: 0x%04X > 0x%04X" % (addr + len(buff), EEPROM_SZ))
+            raise ValueError("Address out of range: 0x%04X > 0x%04X" %
+                             (addr + len(buff), EEPROM_SZ))
         return self._controlWrite_mem(0x0C, 0x20, addr, buff)
 
     '''
@@ -232,14 +258,17 @@ class GXS700:
     def flash_r(self, addr=0, n=FLASH_SZ):
         '''Read (FPGA?) flash'''
         if addr + n > FLASH_SZ:
-            raise ValueError("Address out of range: 0x%04X > 0x%04X" % (addr + n, FLASH_SZ))
+            raise ValueError(
+                "Address out of range: 0x%04X > 0x%04X" % (addr + n, FLASH_SZ))
         return self._controlRead_mem(0x10, 0x100, addr, n)
 
     def flash_erase(self, page):
         '''Erase a flash page'''
         if page > FLASH_PGS:
-            raise ValueError("Page out of range: 0x%02X > 0x%02X" % (page, FLASH_PGS))
-        self.dev.controlWrite(0x40, 0xB0, 0x11, page, chr(page), timeout=self.timeout)
+            raise ValueError(
+                "Page out of range: 0x%02X > 0x%02X" % (page, FLASH_PGS))
+        self.dev.controlWrite(
+            0x40, 0xB0, 0x11, page, chr(page), timeout=self.timeout)
 
     def flash_erase_all(self, verbose=True):
 
@@ -263,7 +292,8 @@ class GXS700:
 
     def fpga_rv(self, addr, n):
         '''Read multiple consecutive FPGA registers'''
-        ret = self.dev.controlRead(0xC0, 0xB0, 0x03, addr, n << 1, timeout=self.timeout)
+        ret = self.dev.controlRead(
+            0xC0, 0xB0, 0x03, addr, n << 1, timeout=self.timeout)
         if len(ret) != n << 1:
             raise Exception("Didn't get all data")
         return struct.unpack('>' + ('H' * n), ret)
@@ -275,7 +305,8 @@ class GXS700:
         size is ignored
         '''
         # 0x1234 expected
-        buff = self.dev.controlRead(0xC0, 0xB0, 0x04, 0, 2, timeout=self.timeout)
+        buff = self.dev.controlRead(
+            0xC0, 0xB0, 0x04, 0, 2, timeout=self.timeout)
         if not decode:
             return buff
         return struct.unpack('>H', buff)[0]
@@ -286,15 +317,17 @@ class GXS700:
 
     def fpga_wv(self, addr, vs):
         '''Write multiple consecutive FPGA registers'''
-        self.dev.controlWrite(0x40, 0xB0, 0x02, addr,
-                struct.pack('>' + ('H' * len(vs)), *vs),
-                timeout=self.timeout)
+        self.dev.controlWrite(
+            0x40,
+            0xB0,
+            0x02,
+            addr,
+            struct.pack('>' + ('H' * len(vs)), *vs),
+            timeout=self.timeout)
 
     # FIXME: remove/hack
     def fpga_wv2(self, addr, vs):
-        self.dev.controlWrite(0x40, 0xB0, 0x02, addr,
-                vs,
-                timeout=self.timeout)
+        self.dev.controlWrite(0x40, 0xB0, 0x02, addr, vs, timeout=self.timeout)
 
     '''
     WARNING WARNING WARNING
@@ -302,13 +335,16 @@ class GXS700:
     Despite values not getting returned
     Maybe I did something wrong?
     '''
+
     def i2c_r(self, addr, n):
         '''Read I2C bus'''
-        return self.dev.controlRead(0xC0, 0xB0, 0x0A, addr, n, timeout=self.timeout)
+        return self.dev.controlRead(
+            0xC0, 0xB0, 0x0A, addr, n, timeout=self.timeout)
 
     def i2c_w(self, addr, buff):
         '''Write I2C bus'''
-        self.dev.controlWrite(0x40, 0xB0, 0x0A, addr, buff, timeout=self.timeout)
+        self.dev.controlWrite(
+            0x40, 0xB0, 0x0A, addr, buff, timeout=self.timeout)
 
     def tim_running(self):
         '''Get if timing analysis is running'''
@@ -326,7 +362,8 @@ class GXS700:
 
     def mcu_rst(self, rst):
         '''Reset FX2'''
-        self.dev.controlWrite(0x40, 0xB0, 0xe600, 0, chr(int(bool(rst))), timeout=self.timeout)
+        self.dev.controlWrite(
+            0x40, 0xB0, 0xe600, 0, chr(int(bool(rst))), timeout=self.timeout)
 
     # FIXME: unclear if these are right
     def mcu_w(self, addr, v):
@@ -336,9 +373,13 @@ class GXS700:
     def mcu_wv(self, addr, vs):
         '''Write multiple consecutive FX2 registers'''
         # Revisit if over-simplified
-        self.dev.controlWrite(0x40, 0xB0, addr, 0,
-                struct.pack('>' + ('B' * len(vs)), *vs),
-                timeout=self.timeout)
+        self.dev.controlWrite(
+            0x40,
+            0xB0,
+            addr,
+            0,
+            struct.pack('>' + ('B' * len(vs)), *vs),
+            timeout=self.timeout)
 
     def fpga_off(self):
         '''
@@ -365,17 +406,20 @@ class GXS700:
 
     def versions(self, decode=True):
         # index, length ignored
-        buff = self.dev.controlRead(0xC0, 0xB0, 0x51, 0, 0x1C, timeout=self.timeout)
+        buff = self.dev.controlRead(
+            0xC0, 0xB0, 0x51, 0, 0x1C, timeout=self.timeout)
         if not decode:
             return buff
         buff = bytearray(buff)
         print "MCU:     %s.%s.%s" % (buff[0], buff[1], buff[2] << 8 | buff[3])
         print 'FPGA:    %s.%s.%s' % (buff[4], buff[5], buff[6] << 8 | buff[7])
-        print 'FGPA WG: %s.%s.%s' % (buff[8], buff[9], buff[10] << 8 | buff[11])
+        print 'FGPA WG: %s.%s.%s' % (buff[8], buff[9],
+                                     buff[10] << 8 | buff[11])
 
     def img_ctr_r(self, n=8):
         # think n is ignored
-        return self.dev.controlRead(0xC0, 0xB0, 0x40, 0, n, timeout=self.timeout)
+        return self.dev.controlRead(
+            0xC0, 0xB0, 0x40, 0, n, timeout=self.timeout)
 
     '''
     w/h: 1, 1 at boot
@@ -392,19 +436,29 @@ class GXS700:
     def img_wh(self):
         '''Get image (width, height)'''
         # length, index ignored
-        return struct.unpack('>HH', self.dev.controlRead(0xC0, 0xB0, 0x23, 0, 4, timeout=self.timeout))
+        return struct.unpack(
+            '>HH',
+            self.dev.controlRead(0xC0, 0xB0, 0x23, 0, 4, timeout=self.timeout))
 
     def img_wh_w(self, w, h):
         '''Set image width, height'''
-        self.dev.controlWrite(0x40, 0xB0, 0x22, 0, struct.pack('>HH', w, h), timeout=self.timeout)
+        self.dev.controlWrite(
+            0x40,
+            0xB0,
+            0x22,
+            0,
+            struct.pack('>HH', w, h),
+            timeout=self.timeout)
 
     def int_t_w(self, t):
         '''Set integration time in ms'''
-        self.dev.controlWrite(0x40, 0xB0, 0x2C, 0, struct.pack('>H', t), timeout=self.timeout)
+        self.dev.controlWrite(
+            0x40, 0xB0, 0x2C, 0, struct.pack('>H', t), timeout=self.timeout)
 
     def int_time(self):
         '''Get integration time in ms)'''
-        buff = self.dev.controlRead(0xC0, 0xB0, 0x2D, 0, 4, timeout=self.timeout)
+        buff = self.dev.controlRead(
+            0xC0, 0xB0, 0x2D, 0, 4, timeout=self.timeout)
         return struct.unpack('>H', buff)[0]
 
     def img_ctr_rst(self):
@@ -447,7 +501,8 @@ class GXS700:
         '''Read trigger parameter'''
         # index, len ignored
         # 000301f4
-        return self.dev.controlRead(0xC0, 0xB0, 0x25, 0, 6, timeout=self.timeout)
+        return self.dev.controlRead(
+            0xC0, 0xB0, 0x25, 0, 6, timeout=self.timeout)
 
     def trig_param_w(self, pix_clust_ctr_thresh, bin_thresh):
         '''Set trigger parameters?'''
@@ -471,7 +526,8 @@ class GXS700:
 
     def sw_trig(self):
         '''Force taking an image without x-rays.  Takes a few seconds'''
-        self.dev.controlWrite(0x40, 0xB0, 0x2b, 0, '\x00', timeout=self.timeout)
+        self.dev.controlWrite(
+            0x40, 0xB0, 0x2b, 0, '\x00', timeout=self.timeout)
 
     def state(self):
         '''Get camera state'''
@@ -502,7 +558,7 @@ class GXS700:
     def chk_wh(self):
         v = self.img_wh()
         if v != self.WH:
-            raise Exception("Unexpected w/h: %s" % (v,))
+            raise Exception("Unexpected w/h: %s" % (v, ))
 
     def chk_fpga_rsig(self):
         v = self.fpga_rsig()
@@ -512,12 +568,12 @@ class GXS700:
     def chk_state(self):
         v = self.state()
         if v != 1:
-            raise Exception('unexpected state %s' % v,)
+            raise Exception('unexpected state %s' % v, )
 
     def chk_error(self):
         e = self.error()
         if e:
-            raise Exception('Unexpected error: %d' % (e,))
+            raise Exception('Unexpected error: %d' % (e, ))
 
     def capture_ready(self, state):
         return self.size == SIZE_LG and state == 0x08 or self.size == SIZE_SM and state == 0x04
@@ -546,13 +602,11 @@ class GXS700:
             print "WARNING: bad FPGA read: 0x%04X" % v
         self.chk_fpga_rsig()
 
-        {1: fpga.setup_fpga1_sm,
-         2: fpga.setup_fpga1_lg}[self.size](self)
+        {1: fpga.setup_fpga1_sm, 2: fpga.setup_fpga1_lg}[self.size](self)
 
         self.chk_fpga_rsig()
 
-        {1: fpga.setup_fpga2_sm,
-         2: fpga.setup_fpga2_lg}[self.size](self)
+        {1: fpga.setup_fpga2_sm, 2: fpga.setup_fpga2_lg}[self.size](self)
 
         self.fpga_w(0x2002, 0x0001)
         v = self.fpga_r(0x2002)
@@ -587,7 +641,7 @@ class GXS700:
         else:
             ret = self._cap_frame_bulk()
         tend = time.time()
-        self.printm('Transfer frame in %0.1f sec' % (tend - tstart,))
+        self.printm('Transfer frame in %0.1f sec' % (tend - tstart, ))
         return ret
 
     def _cap_frame_bulk(self):
@@ -605,6 +659,7 @@ class GXS700:
         '''
 
         all_dat = ['']
+
         def async_cb(trans):
             buf = trans.getBuffer()
             all_dat[0] += buf
@@ -617,7 +672,8 @@ class GXS700:
         remain = [0]
         for _i in xrange(32):
             trans = self.dev.getTransfer()
-            trans.setBulk(0x82, 0x4000, callback=async_cb, user_data=None, timeout=1000)
+            trans.setBulk(
+                0x82, 0x4000, callback=async_cb, user_data=None, timeout=1000)
             trans.submit()
             trans_l.append(trans)
             remain[0] += 1
@@ -632,7 +688,7 @@ class GXS700:
         if len(all_dat) != self.FRAME_SZ:
             raise Exception("Unexpected buffer size")
         return all_dat
-    
+
     def _cap_frame_inter(self):
         '''
         Small sensor only
@@ -650,7 +706,8 @@ class GXS700:
 
         all_dat = str(all_dat[0:self.FRAME_SZ])
         if len(all_dat) != self.FRAME_SZ:
-            raise Exception("Unexpected buffer size. Want %d, got %d" % (self.FRAME_SZ, len(all_dat)))
+            raise Exception("Unexpected buffer size. Want %d, got %d" %
+                            (self.FRAME_SZ, len(all_dat)))
         return all_dat
 
     def _cap_bin(self, scan_cb=lambda itr: None):
@@ -689,7 +746,11 @@ class GXS700:
         self.chk_error()
         return self._cap_frame()
 
-    def cap_binv(self, n, cap_cb, loop_cb=lambda: None, scan_cb=lambda itr: None):
+    def cap_binv(self,
+                 n,
+                 cap_cb,
+                 loop_cb=lambda: None,
+                 scan_cb=lambda itr: None):
         self.hw_trig_arm()
         self.chk_state()
         self.chk_error()
@@ -704,13 +765,13 @@ class GXS700:
             tstart = time.time()
             imgb = self._cap_bin(scan_cb=scan_cb)
             tend = time.time()
-            self.printm('Frame captured in %0.1f sec' % (tend - tstart,))
+            self.printm('Frame captured in %0.1f sec' % (tend - tstart, ))
             rc = cap_cb(imgb)
             # hack: consider doing something else
             if rc:
                 n += 1
             taken += 1
-    
+
             self.chk_state()
             self.chk_error()
 
@@ -719,7 +780,7 @@ class GXS700:
             self.hw_trig_arm()
             self.chk_state()
             self.chk_error()
-    
+
             self.img_wh_w(*self.WH)
             self.set_act_sec(0x0000)
             self.chk_wh()
@@ -732,8 +793,10 @@ class GXS700:
 
     def cap_bin(self, scan_cb=lambda itr: None):
         ret = []
+
         def cb(buff):
             ret.append(buff)
+
         self.cap_binv(1, cb, scan_cb=scan_cb)
         return ret[0]
 
