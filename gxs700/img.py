@@ -119,26 +119,67 @@ def histeq_im(im, nbr_bins=256):
     return imf.convert("I")
 
 
-def ram_r(dev, addr, datal):
-    bs = 16
-    offset = 0
+# This sort of works, but gives an 8 bit image
+# Can I get it to work with mode I somehow instead?
+def decode_l8(buff, wh=None):
+    '''Given bin return PIL image object'''
+    width, height = wh or img.sz_wh(len(buff))
+    buff = str(buff[0:2 * width * height])
+
+    # http://pillow.readthedocs.io/en/3.1.x/handbook/writing-your-own-file-decoder.html
+    # http://svn.effbot.org/public/tags/pil-1.1.4/libImaging/Unpack.c
+    img = Image.frombytes('L', (width, height), buff, "raw", "L;16", 0, -1)
+    img = PIL.ImageOps.invert(img)
+    img = img.transpose(PIL.Image.ROTATE_270)
+    return img
+
+
+def decode(buff, wh=None):
+    '''Given bin return PIL image object'''
+    depth = 2
+    width, height = wh or img.sz_wh(len(buff))
+    buff = bytearray(buff)
+
+    # no need to reallocate each loop
+    img = Image.new("I", (height, width), "White")
+
+    for y in range(height):
+        line0 = buff[y * width * depth:(y + 1) * width * depth]
+        for x in range(width):
+            b0 = line0[2 * x + 0]
+            b1 = line0[2 * x + 1]
+
+            G = (b1 << 8) + b0
+            # optional 16-bit pixel truncation to turn into 8-bit PNG
+            # G = b1
+
+            # In most x-rays white is the part that blocks the x-rays
+            # however, the camera reports brightness (unimpeded x-rays)
+            # compliment to give in conventional form per above
+            G = 0xFFFF - G
+
+            img.putpixel((y, x), G)
+    return img
+
+
+def im2bin(im):
+    '''Given PIL image object return bin'''
+    depth = 2
+    height, width = im.size
     ret = bytearray()
-    while offset < datal:
-        l = min(bs, datal - offset)
-        #print('Read 0x%04X: %d' % (addr + offset, l))
-        ret += dev.controlRead(
-            0xC0, 0xA0, addr + offset, 0x0000, l, timeout=1000)
-        offset += bs
-    return str(ret)
 
+    for y in range(height):
+        #line0 = buff[y * width * depth:(y + 1) * width * depth]
+        line0 = bytearray(width * depth)
+        for x in range(width):
+            g = im.getpixel((y, x))
+            g = 0xFFFF - g
 
-def sn_flash_r(gxs):
-    s = gxs.flash_r(addr=0x0C, n=11).replace('\x00', '')
-    return int(s)
+            b0 = g & 0xFF
+            b1 = (g >> 8) & 0xFF
 
-
-def sn_eeprom_r(gxs):
-    s = gxs.eeprom_r(addr=0x40, n=11).replace('\x00', '')
-    return int(s)
-
+            line0[2 * x + 0] = b0
+            line0[2 * x + 1] = b1
+        ret += line0
+    return ret
 

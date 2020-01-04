@@ -9,10 +9,13 @@ from PIL import Image
 import PIL.ImageOps
 import sys
 import time
+import os
 import usb1
 
 from gxs700 import fpga
 from gxs700 import img
+from gxs700 import fw_sm
+from gxs700 import fw_lg
 '''
 in many cases index and length are ignored
 if you request less it will return a big message anyway, causing an overflow exception
@@ -49,6 +52,40 @@ cm_i2s = {}
 for s, i in cm_s2i.items():
     cm_i2s[i] = s
 
+'''
+small sensor from adam
+both large and small enumerate the same
+how to tell them apart?
+stage1 verified identical
+stage2 curosry glance looks identical (not to mention same VID/PID)
+
+Bus 003 Device 029: ID 5328:202f  
+Bus 003 Device 030: ID 5328:2030  
+
+dexis
+pre-enumer
+post-enumeration
+Bus 003 Device 036: ID 5328:2010  
+'''
+pidvid2name_pre = {
+    # (vid, pid): (desc, firmware load)
+    (0x5328, 0x2009): ('Dexis Platinum (pre-enumeration)', fw_lg),
+    (0x5328, 0x201F): ('Gendex GXS700SM (pre-enumeration)', fw_sm),
+    (0x5328, 0x202F): ('Gendex GXS700LG (pre-enumeration)', fw_lg),
+    # ooops
+    # Bus 002 Device 043: ID 04b4:8613 Cypress Semiconductor Corp. CY7C68013 EZ-USB FX2 USB 2.0 Development Kit
+    (0x04b4, 0x8613): ('CY7C68013 EZ-USB FX2 USB 2.0 Development Kit', fw_lg),
+}
+
+pidvid2name_post = {
+    # note: load_firmware.py deals with pre-enumeration
+    # (vid, pid): (desc, size)
+    (0x5328, 0x2010): ('Dexis Platinum (post-enumeration)', 2),
+    (0x5328, 0x2020): ('Gendex GXS700SM (post enumeration)', 1),
+    (0x5328, 0x2030): ('Gendex GXS700LG (post enumeration)', 2),
+}
+
+
 
 
 def cap_mode2i(mode):
@@ -66,69 +103,30 @@ def cap_mode2s(mode):
     return cm_i2s[cap_mode2i(mode)]
 
 
-# This sort of works, but gives an 8 bit image
-# Can I get it to work with mode I somehow instead?
-def decode_l8(buff, wh=None):
-    '''Given bin return PIL image object'''
-    width, height = wh or img.sz_wh(len(buff))
-    buff = str(buff[0:2 * width * height])
-
-    # http://pillow.readthedocs.io/en/3.1.x/handbook/writing-your-own-file-decoder.html
-    # http://svn.effbot.org/public/tags/pil-1.1.4/libImaging/Unpack.c
-    img = Image.frombytes('L', (width, height), buff, "raw", "L;16", 0, -1)
-    img = PIL.ImageOps.invert(img)
-    img = img.transpose(PIL.Image.ROTATE_270)
-    return img
-
-
-def decode(buff, wh=None):
-    '''Given bin return PIL image object'''
-    depth = 2
-    width, height = wh or img.sz_wh(len(buff))
-    buff = bytearray(buff)
-
-    # no need to reallocate each loop
-    img = Image.new("I", (height, width), "White")
-
-    for y in range(height):
-        line0 = buff[y * width * depth:(y + 1) * width * depth]
-        for x in range(width):
-            b0 = line0[2 * x + 0]
-            b1 = line0[2 * x + 1]
-
-            G = (b1 << 8) + b0
-            # optional 16-bit pixel truncation to turn into 8-bit PNG
-            # G = b1
-
-            # In most x-rays white is the part that blocks the x-rays
-            # however, the camera reports brightness (unimpeded x-rays)
-            # compliment to give in conventional form per above
-            G = 0xFFFF - G
-
-            img.putpixel((y, x), G)
-    return img
-
-
-def im2bin(im):
-    '''Given PIL image object return bin'''
-    depth = 2
-    height, width = im.size
+def ram_r(dev, addr, datal):
+    bs = 16
+    offset = 0
     ret = bytearray()
+    while offset < datal:
+        l = min(bs, datal - offset)
+        #print('Read 0x%04X: %d' % (addr + offset, l))
+        ret += dev.controlRead(
+            0xC0, 0xA0, addr + offset, 0x0000, l, timeout=1000)
+        offset += bs
+    return str(ret)
 
-    for y in range(height):
-        #line0 = buff[y * width * depth:(y + 1) * width * depth]
-        line0 = bytearray(width * depth)
-        for x in range(width):
-            g = im.getpixel((y, x))
-            g = 0xFFFF - g
 
-            b0 = g & 0xFF
-            b1 = (g >> 8) & 0xFF
+def sn_flash_r(gxs):
+    s = gxs.flash_r(addr=0x0C, n=11).replace('\x00', '')
+    return int(s)
 
-            line0[2 * x + 0] = b0
-            line0[2 * x + 1] = b1
-        ret += line0
-    return ret
+
+def sn_eeprom_r(gxs):
+    s = gxs.eeprom_r(addr=0x40, n=11).replace('\x00', '')
+    return int(s)
+
+
+
 
 
 def check_device(usbcontext=None, verbose=True):
@@ -140,7 +138,7 @@ def check_device(usbcontext=None, verbose=True):
         pid = udev.getProductID()
 
         try:
-            desc, _size = fw.pidvid2name_post[(vid, pid)]
+            desc, _size = pidvid2name_post[(vid, pid)]
         except KeyError:
             continue
 
@@ -166,7 +164,7 @@ def open_dev(usbcontext=None, verbose=None):
         usbcontext = usb1.USBContext()
 
     print('Checking if firmware load is needed')
-    if fw.load_all(wait=True, verbose=verbose):
+    if load_all(wait=True, verbose=verbose):
         print('Loaded firmware')
     else:
         print('Firmware load not needed')
@@ -187,7 +185,7 @@ def ez_open_ex(verbose=False, init=True):
     # FW load should indicate size
     vid = dev.getDevice().getVendorID()
     pid = dev.getDevice().getProductID()
-    _desc, size = fw.pidvid2name_post[(vid, pid)]
+    _desc, size = pidvid2name_post[(vid, pid)]
 
     return usbcontext, dev, usbint.GXS700(
         usbcontext, dev, verbose=verbose, size=size, init=init)
@@ -856,4 +854,61 @@ class GXS700:
 
     @staticmethod
     def decode(buff):
-        return decode(buff)
+        return img.decode(buff)
+
+
+def load_all(wait=False, verbose=True):
+    ret = False
+    usbcontext = usb1.USBContext()
+    if verbose:
+        print('Scanning for devices...')
+    for udev in usbcontext.getDeviceList(skip_on_error=True):
+        vid = udev.getVendorID()
+        pid = udev.getProductID()
+
+        try:
+            desc, fwmod = pidvid2name_pre[(vid, pid)]
+        except KeyError:
+            continue
+
+        if verbose:
+            print("")
+            print("")
+            print('Found device (pre-FW): %s' % desc)
+            print('Bus %03i Device %03i: ID %04x:%04x' % (
+                udev.getBusNumber(), udev.getDeviceAddress(), vid, pid))
+            print('Loading firmware')
+        load(udev.open(), fwmod)
+        if verbose:
+            print('Firmware load OK')
+        ret = True
+
+    if ret and wait:
+        print('Waiting for device to come up')
+        tstart = time.time()
+        while time.time() - tstart < 3.0:
+            udev = usbint.check_device()
+            if udev:
+                break
+        else:
+            raise Exception("Renumeration timed out")
+        print('Up after %0.1f sec' % (time.time() - tstart, ))
+
+    return ret
+
+
+'''
+FIXME: extract firmware from this and properly pass it to fxload
+'''
+
+def load(dev, fwmod=fw_lg):
+    # Source data: cap1.cap
+    # Source range: 107 - 286
+
+    # 2017-08-07: below comment indicates that I tested small at some point
+    # but I don't have a small so I guess never added supported
+    # TODO: re-verify this and shrink the code
+    # Verified stage1 is the same for gendex small and large
+    fwmod.stage1(dev)
+    # xxx: should sleep here?
+    fwmod.stage2(dev)

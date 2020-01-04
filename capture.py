@@ -1,7 +1,9 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 from gxs700 import usbint
 from gxs700 import util
+from gxs700 import img
 
 import argparse
 import glob
@@ -14,9 +16,9 @@ ma_user = None
 
 
 def meta(gxs):
-    sn_flash = util.sn_flash_r(gxs)
+    sn_flash = usbint.sn_flash_r(gxs)
     try:
-        sn_eeprom = util.sn_eeprom_r(gxs)
+        sn_eeprom = usbint.sn_eeprom_r(gxs)
     except:
         sn_eeprom = None
 
@@ -43,34 +45,34 @@ def run(
     def scan_cb(itr):
         itrs[0] = itr
         if force and itr == 0:
-            print 'Forcing trigger'
+            print('Forcing trigger')
             gxs.sw_trig()
 
     def cb(imgb):
         base = os.path.join(args.dir, 'capture_%03d' % imagen[0])
         if args.bin:
             fn = base + '.bin'
-            print 'Writing %s' % fn
+            print('Writing %s' % fn)
             open(fn, 'w').write(imgb)
 
         if args.png:
             pngfn = base + '.png'
-            print 'Decoding image...'
+            print('Decoding image...')
             img = usbint.GXS700.decode(imgb)
-            print 'Writing %s...' % pngfn
+            print('Writing %s...' % pngfn)
             img.save(pngfn)
 
         if args.hist_eq:
             pngfn = base + '_e.png'
-            print 'Equalizing histogram...'
-            imgb = util.histeq(imgb)
-            print 'Decoding image...'
+            print('Equalizing histogram...')
+            imgb = img.histeq(imgb)
+            print('Decoding image...')
             img = usbint.GXS700.decode(imgb)
-            print 'Writing %s...' % pngfn
+            print('Writing %s...' % pngfn)
             img.save(pngfn)
 
         if args.meta:
-            print 'Saving meta...'
+            print('Saving meta...')
             fn = base + '.json'
             j = {
                 'sensor': meta(gxs),
@@ -85,7 +87,7 @@ def run(
 
         imagen[0] += 1
 
-    _usbcontext, _dev, gxs = util.ez_open_ex(verbose=args.verbose, init=False)
+    _usbcontext, _dev, gxs = usbint.ez_open_ex(verbose=args.verbose, init=False)
 
     if cap_mode:
         gxs.cap_mode = cap_mode
@@ -103,8 +105,8 @@ def run(
     imagen = [0]
     while glob.glob('%s/capture_%03d*' % (args.dir, imagen[0])):
         imagen[0] += 1
-    print 'Taking first image to %s' % ('%s/capture_%03d.bin' %
-                                        (args.dir, imagen[0]), )
+    print('Taking first image to %s' % ('%s/capture_%03d.bin' %
+                                        (args.dir, imagen[0]), ))
 
     gxs.cap_binv(args.number, cb, scan_cb=scan_cb)
 
