@@ -1,3 +1,4 @@
+from __future__ import print_function
 '''
 FIXME: extract firmware from this and properly pass it to fxload
 '''
@@ -8,9 +9,9 @@ import usb1
 import argparse
 import time
 
-import util
-import fw_sm
-import fw_lg
+from gxs700 import usbint
+from gxs700 import fw_sm
+from gxs700 import fw_lg
 '''
 small sensor from adam
 both large and small enumerate the same
@@ -49,7 +50,7 @@ def load_all(wait=False, verbose=True):
     ret = False
     usbcontext = usb1.USBContext()
     if verbose:
-        print 'Scanning for devices...'
+        print('Scanning for devices...')
     for udev in usbcontext.getDeviceList(skip_on_error=True):
         vid = udev.getVendorID()
         pid = udev.getProductID()
@@ -60,27 +61,27 @@ def load_all(wait=False, verbose=True):
             continue
 
         if verbose:
-            print
-            print
-            print 'Found device (pre-FW): %s' % desc
-            print 'Bus %03i Device %03i: ID %04x:%04x' % (
-                udev.getBusNumber(), udev.getDeviceAddress(), vid, pid)
-            print 'Loading firmware'
+            print("")
+            print("")
+            print('Found device (pre-FW): %s' % desc)
+            print('Bus %03i Device %03i: ID %04x:%04x' % (
+                udev.getBusNumber(), udev.getDeviceAddress(), vid, pid))
+            print('Loading firmware')
         load(udev.open(), fwmod)
         if verbose:
-            print 'Firmware load OK'
+            print('Firmware load OK')
         ret = True
 
     if ret and wait:
-        print 'Waiting for device to come up'
+        print('Waiting for device to come up')
         tstart = time.time()
         while time.time() - tstart < 3.0:
-            udev = util.check_device()
+            udev = usbint.check_device()
             if udev:
                 break
         else:
             raise Exception("Renumeration timed out")
-        print 'Up after %0.1f sec' % (time.time() - tstart, )
+        print('Up after %0.1f sec' % (time.time() - tstart, ))
 
     return ret
 

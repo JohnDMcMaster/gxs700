@@ -1,3 +1,4 @@
+from __future__ import print_function
 '''
 Low level USB interface
 TODO: move all decoding out of here
@@ -8,8 +9,10 @@ from PIL import Image
 import PIL.ImageOps
 import sys
 import time
+import usb1
 
-import fpga
+from gxs700 import fpga
+from gxs700 import img
 '''
 in many cases index and length are ignored
 if you request less it will return a big message anyway, causing an overflow exception
@@ -31,17 +34,6 @@ EEPROM_SZ = 0x2000
 FLASH_SZ = 0x10000
 FLASH_PGS = FLASH_SZ / 0x100
 
-WH_SM = (1040, 1552)
-WH_LG = (1344, 1850)
-
-# 16 bit image
-SZ_SM = 2 * WH_SM[0] * WH_SM[1]
-SZ_LG = 2 * WH_LG[0] * WH_LG[1]
-
-# enum
-SIZE_SM = 1
-SIZE_LG = 2
-
 # Capture modes
 CM_NORM = 0
 CM_HBLOCK = 1
@@ -54,23 +46,9 @@ cm_s2i = {
     'vbar': CM_VBAR,
 }
 cm_i2s = {}
-for s, i in cm_s2i.iteritems():
+for s, i in cm_s2i.items():
     cm_i2s[i] = s
 
-
-def sz_wh(sz):
-    # Was bug capturing too much data, just below two frames
-    if sz == SZ_LG or sz == 9937152:
-        return WH_LG
-    elif sz == SZ_SM:
-        return WH_SM
-    else:
-        print SZ_SM, SZ_LG
-        raise ValueError("Bad buffer size %s" % sz)
-
-
-def get_bufF_sz(sz):
-    return {1: SZ_SM, 2: SZ_LG}[sz]
 
 
 def cap_mode2i(mode):
@@ -92,7 +70,7 @@ def cap_mode2s(mode):
 # Can I get it to work with mode I somehow instead?
 def decode_l8(buff, wh=None):
     '''Given bin return PIL image object'''
-    width, height = wh or sz_wh(len(buff))
+    width, height = wh or img.sz_wh(len(buff))
     buff = str(buff[0:2 * width * height])
 
     # http://pillow.readthedocs.io/en/3.1.x/handbook/writing-your-own-file-decoder.html
@@ -100,14 +78,13 @@ def decode_l8(buff, wh=None):
     img = Image.frombytes('L', (width, height), buff, "raw", "L;16", 0, -1)
     img = PIL.ImageOps.invert(img)
     img = img.transpose(PIL.Image.ROTATE_270)
-    print img.mode
     return img
 
 
 def decode(buff, wh=None):
     '''Given bin return PIL image object'''
     depth = 2
-    width, height = wh or sz_wh(len(buff))
+    width, height = wh or img.sz_wh(len(buff))
     buff = bytearray(buff)
 
     # no need to reallocate each loop
@@ -154,6 +131,75 @@ def im2bin(im):
     return ret
 
 
+def check_device(usbcontext=None, verbose=True):
+    if usbcontext is None:
+        usbcontext = usb1.USBContext()
+
+    for udev in usbcontext.getDeviceList(skip_on_error=True):
+        vid = udev.getVendorID()
+        pid = udev.getProductID()
+
+        try:
+            desc, _size = fw.pidvid2name_post[(vid, pid)]
+        except KeyError:
+            continue
+
+        if verbose:
+            print("")
+            print("")
+            print('Found device (post-FW): %s' % desc)
+            print('Bus %03i Device %03i: ID %04x:%04x' % (
+                udev.getBusNumber(), udev.getDeviceAddress(), vid, pid))
+        return udev
+    return None
+
+
+def open_dev(usbcontext=None, verbose=None):
+    '''
+    Return a device with the firmware loaded
+    '''
+
+    verbose = verbose if verbose is not None else os.getenv(
+        'GXS700_VERBOSE', 'N') == 'Y'
+
+    if usbcontext is None:
+        usbcontext = usb1.USBContext()
+
+    print('Checking if firmware load is needed')
+    if fw.load_all(wait=True, verbose=verbose):
+        print('Loaded firmware')
+    else:
+        print('Firmware load not needed')
+
+    print('Scanning for loaded devices...')
+    udev = check_device(usbcontext, verbose=verbose)
+    if udev is None:
+        raise Exception("Failed to find a device")
+
+    dev = udev.open()
+    return dev
+
+
+def ez_open_ex(verbose=False, init=True):
+    usbcontext = usb1.USBContext()
+    dev = open_dev(usbcontext, verbose=verbose)
+
+    # FW load should indicate size
+    vid = dev.getDevice().getVendorID()
+    pid = dev.getDevice().getProductID()
+    _desc, size = fw.pidvid2name_post[(vid, pid)]
+
+    return usbcontext, dev, usbint.GXS700(
+        usbcontext, dev, verbose=verbose, size=size, init=init)
+
+
+def ez_open(verbose=False):
+    _usbcontext, _dev, gxs700 = ez_open_ex(verbose)
+    return gxs700
+
+
+
+
 class GXS700:
     '''
     Size 1: small
@@ -186,7 +232,7 @@ class GXS700:
 
     def printm(self, msg):
         if self.do_printm:
-            print msg
+            print(msg)
 
     def set_size(self, size):
         self.size = size
@@ -278,7 +324,7 @@ class GXS700:
                 sys.stdout.write('.')
                 sys.stdout.flush()
         if verbose:
-            print
+            print("")
 
     def flash_w(self, addr, buff):
         '''Write (FPGA?) flash'''
@@ -411,10 +457,10 @@ class GXS700:
         if not decode:
             return buff
         buff = bytearray(buff)
-        print "MCU:     %s.%s.%s" % (buff[0], buff[1], buff[2] << 8 | buff[3])
-        print 'FPGA:    %s.%s.%s' % (buff[4], buff[5], buff[6] << 8 | buff[7])
-        print 'FGPA WG: %s.%s.%s' % (buff[8], buff[9],
-                                     buff[10] << 8 | buff[11])
+        print("MCU:     %s.%s.%s" % (buff[0], buff[1], buff[2] << 8 | buff[3]))
+        print('FPGA:    %s.%s.%s' % (buff[4], buff[5], buff[6] << 8 | buff[7]))
+        print('FGPA WG: %s.%s.%s' % (buff[8], buff[9],
+                                     buff[10] << 8 | buff[11]))
 
     def img_ctr_r(self, n=8):
         # think n is ignored
@@ -592,14 +638,14 @@ class GXS700:
 
         # small vs large: how to correctly set?
         # (32769, 1)
-        #print self.img_wh()
+        #print(self.img_wh())
         self.img_wh_w(*self.WH)
         self.set_act_sec(0x0000)
         self.chk_wh()
 
         v = self.fpga_r(0x2002)
         if v != 0x0000 and self.verbose:
-            print "WARNING: bad FPGA read: 0x%04X" % v
+            print("WARNING: bad FPGA read: 0x%04X" % v)
         self.chk_fpga_rsig()
 
         {1: fpga.setup_fpga1_sm, 2: fpga.setup_fpga1_lg}[self.size](self)
