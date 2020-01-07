@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+from __future__ import print_function
 from gxs700 import util
 
 import argparse
@@ -18,7 +20,7 @@ if __name__ == "__main__":
     parser.add_argument('dout', nargs='?', default=None, help='File out')
     args = parser.parse_args()
 
-    usbcontext, dev, gxs = util.ez_open_ex(verbose=args.verbose)
+    usbcontext, dev, gxs = usbint.ez_open_ex(verbose=args.verbose)
 
     sn_flash = util.sn_flash_r(gxs)
     try:

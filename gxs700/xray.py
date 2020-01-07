@@ -30,7 +30,8 @@ def wps7_switch(n, on, user=None, password=None):
     state = 'ON' if on else 'OFF'
     c = pycurl.Curl()
     c.setopt(c.URL, 'http://energon/outlet?%d=%s' % (n, state))
-    c.setopt(c.WRITEDATA, open('/dev/null', 'w'))
+    c.setopt(c.WRITEDATA, open('/dev/null', 'wb'))
+    #c.setopt(c.WRITEDATA, None)
     c.setopt(pycurl.USERPWD, '%s:%s' % (user, password))
     c.perform()
     c.close()
@@ -42,14 +43,14 @@ IIRC roughly 10% duty cycle at max power is safe
 10 mA @ 90 kV = 900 W
 """
 class WPS7XRay:
-    def __init__(self):
+    def __init__(self, verbose=False):
         # Assume not fired
         self.fire_last = 0
         self.warm_tstart = None
-        self.sw_hv = 1
-        self.sw_fil = 2
+        self.sw_fil = 1
+        self.sw_hv = 2
         self.warm_time = 5
-        self.verbose = 0
+        self.verbose = verbose
 
         # Default WPS7 creds
         self.user = None

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from __future__ import print_function
 '''
 TODO: move to uvscada or similar
@@ -36,7 +37,7 @@ if __name__ == "__main__":
     if os.getenv('WPS7_PASS', None) is None:
         raise Exception("Requires WPS7 password")
 
-    usbcontext, dev, gxs = gxs700.util.ez_open_ex(verbose=args.verbose)
+    usbcontext, dev, gxs = gxs700.usbint.ez_open_ex(verbose=args.verbose)
 
     fn = ''
     

@@ -11,9 +11,6 @@ import os
 import binascii
 import json
 
-kvp_user = None
-ma_user = None
-
 
 def meta(gxs):
     sn_flash = usbint.sn_flash_r(gxs)
@@ -62,26 +59,12 @@ def run(
             print('Writing %s...' % pngfn)
             img.save(pngfn)
 
-        if args.hist_eq:
-            pngfn = base + '_e.png'
-            print('Equalizing histogram...')
-            imgb = img.histeq(imgb)
-            print('Decoding image...')
-            img = usbint.GXS700.decode(imgb)
-            print('Writing %s...' % pngfn)
-            img.save(pngfn)
-
         if args.meta:
             print('Saving meta...')
             fn = base + '.json'
             j = {
                 'sensor': meta(gxs),
-                'x-ray': {
-                    'kvp_user': kvp_user,
-                    'ma_user': ma_user,
-                },
                 'force': force,
-                'itr': itrs[0],
             }
             json.dump(j, open(fn, 'w'), indent=4, sort_keys=True)
 
@@ -144,13 +127,8 @@ if __name__ == "__main__":
         help='Write histogram equalized .png image file')
     util.add_bool_arg(
         parser, '--meta', default=True, help='Write metadata .json file')
-    parser.add_argument('--kvp', default=None, help='Metadata kVp comment')
-    parser.add_argument('--ma', default=None, help='Metadata mA comment')
 
     args = parser.parse_args()
-
-    kvp_user = args.kvp
-    ma_user = args.ma
 
     run(force=args.force,
         cap_mode=args.cap_mode,

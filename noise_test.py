@@ -33,7 +33,7 @@ class NoiseTest(object):
         self.gxs = None
         self.triggered = None
 
-        _usbcontext, _dev, self.gxs = gxs700.util.ez_open_ex(
+        _usbcontext, _dev, self.gxs = gxs700.usbint.ez_open_ex(
             verbose=args.verbose)
         self.gxs.do_printm = False
 

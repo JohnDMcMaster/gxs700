@@ -37,7 +37,7 @@ if __name__ == "__main__":
     # With corrupted EEPROM bad w/h
     # and its just not necessary since all we really need is the FX2
     # heck, we don't even need to load FW really
-    _usbcontext, _dev, gxs = gxs700.util.ez_open_ex(
+    _usbcontext, _dev, gxs = gxs700.usbint.ez_open_ex(
         verbose=args.verbose, init=False)
 
     # matches this

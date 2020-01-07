@@ -3,6 +3,7 @@ import sys
 import datetime
 import shutil
 import os
+import tempfile
 
 def add_bool_arg(parser, yes_arg, default=False, **kwargs):
     dashed = yes_arg.replace('--', '')
@@ -57,6 +58,7 @@ def hexdump(data, label=None, indent='', address_width=8, f=sys.stdout):
         f.write((" " * (bytes_per_row - real_data)) + "|\n")
 
 
+
 # Print timestamps in front of all output messages
 class IOTimestamp(object):
     def __init__(self, obj=sys, name='stdout'):
@@ -89,6 +91,22 @@ class IOTimestamp(object):
             # The last element has no newline
             self.nl = i != (len(parts) - 1)
 
+def tobytes(buff):
+    if type(buff) is str:
+        #return bytearray(buff, 'ascii')
+        return bytearray([ord(c) for c in buff])
+    elif type(buff) is bytearray or type(buff) is bytes:
+        return buff
+    else:
+        assert 0, type(buff)
+
+def tostr(buff):
+    if type(buff) is str:
+        return buff
+    elif type(buff) is bytearray or type(buff) is bytes:
+        return ''.join([chr(b) for b in buff])
+    else:
+        assert 0, type(buff)
 
 # Log file descriptor to file
 class IOLog(object):
@@ -142,3 +160,19 @@ class IOLog(object):
     def write(self, data):
         self.fd.write(data)
         self.out_fd.write(data)
+
+class AutoTempFN:
+    def __init__(self, suffix=''):
+        #self.name = tempfile.mkstemp()
+        f = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+        self.name = f.name
+        f.close()
+
+    def __enter__(self):
+        return self.name
+
+    def __exit__(self, type, value, traceback):
+        try:
+            os.unlink(self.name)
+        except:
+            pass

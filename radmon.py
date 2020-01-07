@@ -45,7 +45,7 @@ class RadMon(object):
         self.triggered = None
         self.fout = fout
 
-        _usbcontext, _dev, self.gxs = gxs700.util.ez_open_ex(
+        _usbcontext, _dev, self.gxs = gxs700.usbint.ez_open_ex(
             verbose=args.verbose)
         self.gxs.do_printm = False
 

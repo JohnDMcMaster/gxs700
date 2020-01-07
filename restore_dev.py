@@ -13,7 +13,7 @@ if __name__ == "__main__":
     parser.add_argument('din', nargs='?', default='dump', help='File in')
     args = parser.parse_args()
 
-    usbcontext, dev, gxs = gxs700.util.ez_open_ex()
+    usbcontext, dev, gxs = gxs700.usbint.ez_open_ex()
 
     print 'Ready'
 

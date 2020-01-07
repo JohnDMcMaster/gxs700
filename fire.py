@@ -1,5 +1,5 @@
+#!/usr/bin/env python
 from __future__ import print_function
-import time
 from gxs700.xray import WPS7XRay
 import argparse
 
