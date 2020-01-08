@@ -53,8 +53,7 @@ def do_bpr(im, badimg):
         ret.putpixel((x, y), im_med3(im, x, y, badimg))
     return ret
 
-def run(dir_in, fn_out, cal_dir="cal", hist_eq=True, invert=True, hist_eq_roi=None, scalar=None, rescale=True, bpr=True, raw=False):
-    cal_dir = cal_dir
+def run(dir_in, fn_out, cal_dir=None, hist_eq=True, invert=True, hist_eq_roi=None, scalar=None, rescale=True, bpr=True, raw=False):
     if not fn_out:
         dir_in = dir_in
         if dir_in[-1] == '/':
@@ -74,7 +73,17 @@ def run(dir_in, fn_out, cal_dir="cal", hist_eq=True, invert=True, hist_eq_roi=No
     im_wip = img_in
     print("Avg min: %u, max: %u" % (np.ndarray.min(np.array(im_wip)), np.ndarray.max(np.array(im_wip))))
     if not raw:
-        if rescale:
+        if not cal_dir:
+            cal_dir = im_util.default_cal_dir(im_dir=dir_in)
+            if not os.path.exists(cal_dir):
+                print("WARNING: default calibration dir %s does not exist" % cal_dir)
+                cal_dir = None
+    
+        if cal_dir:
+            assert os.path.exists(cal_dir), cal_dir
+            print("Found calibration files at %s" % cal_dir)
+
+        if rescale and cal_dir:
             ffimg = Image.open(os.path.join(cal_dir, 'ff.png'))
             np_ff2 = np.array(ffimg)
             dfimg = Image.open(os.path.join(cal_dir, 'df.png'))
@@ -103,7 +112,7 @@ def run(dir_in, fn_out, cal_dir="cal", hist_eq=True, invert=True, hist_eq_roi=No
             print("Rescale min: %u, max: %u" % (np.ndarray.min(np.array(im_wip)), np.ndarray.max(np.array(im_wip))))
     
         # Seems this needs to be done after scaling or artifacts get amplified
-        if bpr:
+        if bpr and cal_dir:
             badimg = Image.open(os.path.join(cal_dir, 'bad.png'))
             im_wip = do_bpr(im_wip, badimg)
             print("BPR min: %u, max: %u" % (np.ndarray.min(np.array(im_wip)), np.ndarray.max(np.array(im_wip))))
@@ -122,8 +131,8 @@ def run(dir_in, fn_out, cal_dir="cal", hist_eq=True, invert=True, hist_eq_roi=No
     # CV2 might also work
 
     if hist_eq:
-        mode = os.getenv("FAXITRON_EQ_MODE", "0")
-        print("Eq mode (FAXITRON_EQ_MODE) %s" % mode)
+        mode = os.getenv("GXS700_EQ_MODE", "0")
+        print("Eq mode (GXS700_EQ_MODE) %s" % mode)
         if mode == "0":
             if hist_eq_roi:
                 x1, y1, x2, y2 = hist_eq_roi
@@ -165,7 +174,7 @@ def main():
     
     parser = argparse.ArgumentParser(description='Apply image correction')
     #parser.add_argument('--images', type=int, default=0, help='Only take first n images, for debugging')
-    parser.add_argument('--cal-dir', default='cal', help='')
+    parser.add_argument('--cal-dir', default='', help='')
     parser.add_argument('--hist-eq-roi', default=None, help='hist eq x1,y1,x2,y2')
     add_bool_arg(parser, "--hist-eq", default=True)
     add_bool_arg(parser, "--invert", default=True)

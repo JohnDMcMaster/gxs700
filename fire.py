@@ -12,7 +12,7 @@ if __name__ == '__main__':
 
     xray = WPS7XRay()
     print('Warm %d sec, fire %d sec' % (args.fil, args.hv))
-    xray.fil_warm()
     xray.warm_time = args.fil
+    xray.warm()
     xray.fire(args.hv)
     print('Done')

@@ -92,7 +92,8 @@ pidvid2name_post = {
 
 
 def cap_mode2i(mode):
-    if type(mode) in (str, unicode):
+    #if type(mode) in (str, unicode):
+    if type(mode) is str:
         modei = cm_s2i[mode]
     else:
         modei = mode
@@ -120,12 +121,12 @@ def ram_r(dev, addr, datal):
 
 
 def sn_flash_r(gxs):
-    s = gxs.flash_r(addr=0x0C, n=11).replace('\x00', '')
+    s = gxs.flash_r(addr=0x0C, n=11).replace(b'\x00', b'')
     return int(s)
 
 
 def sn_eeprom_r(gxs):
-    s = gxs.eeprom_r(addr=0x40, n=11).replace('\x00', '')
+    s = gxs.eeprom_r(addr=0x40, n=11).replace(b'\x00', b'')
     return int(s)
 
 
@@ -166,13 +167,13 @@ def open_dev(usbcontext=None, verbose=None):
     if usbcontext is None:
         usbcontext = usb1.USBContext()
 
-    print('Checking if firmware load is needed')
+    verbose and print('Checking if firmware load is needed')
     if load_all(wait=True, verbose=verbose):
-        print('Loaded firmware')
+        verbose and print('Loaded firmware')
     else:
-        print('Firmware load not needed')
+        verbose and print('Firmware load not needed')
 
-    print('Scanning for loaded devices...')
+    verbose and print('Scanning for loaded devices...')
     udev = check_device(usbcontext, verbose=verbose)
     if udev is None:
         raise Exception("Failed to find a device")
@@ -260,7 +261,7 @@ class GXS700:
             usbstuff = None,
             init=True,
             size=2,
-            do_printm=True,
+            do_print=True,
             cap_mode=None,
             int_t=None,
     ):
@@ -276,7 +277,7 @@ class GXS700:
         self.timeout = 0
         self.wait_trig_cb = lambda: None
         
-        self.do_printm = do_printm
+        self.do_printm = do_print
         self.cap_mode = 'norm' if cap_mode is None else cap_mode
         # 0x2BC => 700 ms
         self.set_int_t(700 if int_t is None else int_t)
@@ -304,7 +305,7 @@ class GXS700:
         self.FRAME_SZ = 2 * self.WH[0] * self.WH[1]
 
     def _controlRead_mem(self, req, max_read, addr, dump_len):
-        ret = ''
+        ret = bytearray()
         i = 0
         while i < dump_len:
             l_this = min(dump_len - i, max_read)
@@ -335,11 +336,11 @@ class GXS700:
 
     def hw_trig_arm(self):
         '''Enable taking picture when x-rays are above threshold'''
-        self.dev.controlWrite(0x40, 0xB0, 0x2E, 0, '\x00')
+        self.dev.controlWrite(0x40, 0xB0, 0x2E, 0, b'\x00')
 
     def hw_trig_disarm(self):
         '''Disable taking picture when x-rays are above threshold'''
-        self.dev.controlWrite(0x40, 0xB0, 0x2F, 0, '\x00')
+        self.dev.controlWrite(0x40, 0xB0, 0x2F, 0, b'\x00')
 
     def eeprom_r(self, addr=0, n=EEPROM_SZ):
         # FIXME: should be 0x0D?
@@ -377,7 +378,7 @@ class GXS700:
 
     def flash_erase_all(self, verbose=True):
 
-        for page in xrange(FLASH_PGS):
+        for page in range(FLASH_PGS):
             self.flash_erase(page)
             if verbose:
                 sys.stdout.write('.')
@@ -568,7 +569,7 @@ class GXS700:
 
     def img_ctr_rst(self):
         '''Reset image counter'''
-        self.dev.controlWrite(0x40, 0xB0, 0x41, 0, '\x00')
+        self.dev.controlWrite(0x40, 0xB0, 0x41, 0, b'\x00')
 
     def exp_ts_w(self, ts):
         '''Write exposure timestamp'''
@@ -578,7 +579,7 @@ class GXS700:
 
     def set_act_sec(self, sec):
         '''Activate flash sector?'''
-        self.dev.controlWrite(0x40, 0xB0, 0x0E, sec, '')
+        self.dev.controlWrite(0x40, 0xB0, 0x0E, sec, b'')
 
     def cap_mode_w(self, mode):
         '''
@@ -594,13 +595,14 @@ class GXS700:
         See https://siliconpr0n.org/nuc/doku.php?id=gendex:gxs700#pattern_generator
         '''
         #if not mode in (0, 5):
-        if type(mode) in (str, unicode):
+        #if type(mode) in (str, unicode):
+        if type(mode) is str:
             modei = cm_s2i[mode]
         else:
             modei = mode
         if not modei in cm_i2s:
             raise Exception('Invalid mode: %d' % modei)
-        self.dev.controlWrite(0x40, 0xB0, 0x21, modei, '\x00')
+        self.dev.controlWrite(0x40, 0xB0, 0x21, modei, b'\x00')
 
     def trig_param_r(self):
         '''Read trigger parameter'''
@@ -632,7 +634,7 @@ class GXS700:
     def sw_trig(self):
         '''Force taking an image without x-rays.  Takes a few seconds'''
         self.dev.controlWrite(
-            0x40, 0xB0, 0x2b, 0, '\x00', timeout=self.timeout)
+            0x40, 0xB0, 0x2b, 0, b'\x00', timeout=self.timeout)
 
     def state(self):
         '''Get camera state'''
@@ -763,19 +765,19 @@ class GXS700:
         So take just enough data
         '''
 
-        all_dat = ['']
+        all_dat = bytearray()
 
         def async_cb(trans):
             buf = trans.getBuffer()
-            all_dat[0] += buf
-            if len(all_dat[0]) < self.FRAME_SZ:
+            all_dat.extend(buf)
+            if len(all_dat) < self.FRAME_SZ:
                 trans.submit()
             else:
                 remain[0] -= 1
 
         trans_l = []
         remain = [0]
-        for _i in xrange(32):
+        for _i in range(32):
             trans = self.dev.getTransfer()
             trans.setBulk(
                 0x82, 0x4000, callback=async_cb, user_data=None, timeout=1000)
@@ -789,7 +791,7 @@ class GXS700:
         for trans in trans_l:
             trans.close()
 
-        all_dat = str(all_dat[0][0:self.FRAME_SZ])
+        all_dat = all_dat[0:self.FRAME_SZ]
         if len(all_dat) != self.FRAME_SZ:
             raise Exception("Unexpected buffer size")
         return all_dat
@@ -815,42 +817,45 @@ class GXS700:
                             (self.FRAME_SZ, len(all_dat)))
         return all_dat
 
-    def _cap_bin(self, scan_cb=lambda itr: None, force_trig=False):
+    def _cap_bin(self, scan_cb=lambda itr: None, force_trig=False, xr=None):
         '''Capture a raw binary frame, waiting for trigger'''
         # For firing x-ray
         self.wait_trig_cb()
 
         state_last = self.state()
         i = 0
-        while True:
-            if force_trig and i == 0:
-                print('Forcing trigger')
-                self.sw_trig()
-            scan_cb(i)
-
-            state = self.state()
-            if state != state_last:
-                self.printm('New state %s (scan %d)' % (state, i))
-
-            if i % 1000 == 0:
-                self.printm('scan %d (state %s)' % (i, state))
-
-            # See state() for comments on state values
-            # Large
-            if self.capture_ready(state):
-                self.printm('Ready (state %d)' % state)
-                break
-            # Intermediate states
-            # Ex: 2 during acq
-            elif state != 0x01:
-                # print 'Transient state %s' % state
-                pass
-
-            self.chk_error()
-
-            i = i + 1
-            state_last = state
-
+        try:
+            xr and xr.beam_on()
+            while True:
+                if force_trig and i == 0:
+                    print('Forcing trigger')
+                    self.sw_trig()
+                scan_cb(i)
+    
+                state = self.state()
+                if state != state_last:
+                    self.printm('New state %s (scan %d)' % (state, i))
+            
+                if i % 1000 == 0:
+                    self.printm('scan %d (state %s)' % (i, state))
+    
+                # See state() for comments on state values
+                # Large
+                if self.capture_ready(state):
+                    self.printm('Ready (state %d)' % state)
+                    break
+                # Intermediate states
+                # Ex: 2 during acq
+                elif state != 0x01:
+                    # print 'Transient state %s' % state
+                    pass
+    
+                self.chk_error()
+    
+                i = i + 1
+                state_last = state
+        finally:
+            xr and xr.beam_off()
         self.chk_error()
         return self._cap_frame()
 
@@ -859,7 +864,8 @@ class GXS700:
                  cap_cb,
                  loop_cb=lambda: None,
                  scan_cb=lambda itr: None,
-                 force_trig=False):
+                 force_trig=False,
+                 xr=None):
         self.hw_trig_arm()
         self.chk_state()
         self.chk_error()
@@ -872,7 +878,7 @@ class GXS700:
         taken = 0
         while taken < n:
             tstart = time.time()
-            imgb = self._cap_bin(scan_cb=scan_cb, force_trig=force_trig)
+            imgb = self._cap_bin(scan_cb=scan_cb, force_trig=force_trig, xr=xr)
             tend = time.time()
             self.printm('Frame captured in %0.1f sec' % (tend - tstart, ))
             rc = cap_cb(taken, imgb)
@@ -913,12 +919,7 @@ class GXS700:
         '''Capture a decoded image to filename, waiting for trigger'''
         return self.decode(self.cap_bin())
 
-    @staticmethod
-    def decode_sm(buff):
-        pass
-
-    @staticmethod
-    def decode(buff):
+    def decode(self, buff):
         return img.decode(buff)
 
     def get_json(self, force_trig=None):
@@ -930,10 +931,10 @@ class GXS700:
     
         return {
             'size': self.size,
-            'sn_flash': sn_flash,
-            'sn_eeprom': sn_eeprom,
+            'sn_flash': util.json_str(sn_flash),
+            'sn_eeprom': util.json_str(sn_eeprom),
             'int_time': self.int_time(),
-            'trig_params': binascii.hexlify(self.trig_param_r()),
+            #'trig_params': binascii.hexlify(self.trig_param_r()),
             'force_trig': util.json_bool(force_trig),
             'mode': cap_mode2s(self.cap_mode)
         }

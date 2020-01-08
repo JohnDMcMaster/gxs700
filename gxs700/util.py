@@ -215,3 +215,9 @@ def json_bool(v):
         return None
     else:
         return bool(v)
+
+def json_str(v):
+    if v is None:
+        return None
+    else:
+        return str(v)

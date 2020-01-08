@@ -15,7 +15,7 @@ import json
 def run(
         outdir=None,
         postfix=None,
-        imgn=None,
+        imgn=1,
         force_trig=False,
         cap_mode=None,
         int_t=None,
@@ -23,7 +23,10 @@ def run(
         bin_thresh=None,
         bin_out=False, png_out=True,
         meta_out=True,
+        xr=None,
         ):
+
+    print("Preparing capture")
 
     if not outdir:
         outdir = util.default_date_dir("out", "", postfix)
@@ -40,7 +43,7 @@ def run(
 
         if png_out:
             print('Decoding image...')
-            img = usbint.GXS700.decode(imgb)
+            img = gxs.decode(imgb)
             print('Writing %s...' % pngfn)
             img.save(pngfn)
 
@@ -59,7 +62,7 @@ def run(
             pix_clust_ctr_thresh=ctr_thresh, bin_thresh=bin_thresh)
     gxs._init()
 
-    gxs.cap_binv(imgn, cb, force_trig=force_trig)
+    gxs.cap_binv(imgn, cb, force_trig=force_trig, xr=xr)
 
 
 def main():

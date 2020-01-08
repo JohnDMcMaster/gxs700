@@ -7,6 +7,7 @@ TODO: move to own repo
 import pycurl
 import os
 import time
+from gxs700 import util
 
 class XRay:
     def __init__(self):
@@ -24,12 +25,14 @@ class XRay:
     def beam_off(self):
         pass
 
-def wps7_switch(n, on, user=None, password=None):
+def wps7_switch(n, on, host=None, user=None, password=None):
+    host = os.getenv('WPS7_HOST', None) if host is None else host
+    assert host
     user = os.getenv('WPS7_USER', 'admin') if user is None else user
     password = os.getenv('WPS7_PASS', '') if password is None else password
     state = 'ON' if on else 'OFF'
     c = pycurl.Curl()
-    c.setopt(c.URL, 'http://energon/outlet?%d=%s' % (n, state))
+    c.setopt(c.URL, 'http://%s/outlet?%d=%s' % (host, n, state))
     c.setopt(c.WRITEDATA, open('/dev/null', 'wb'))
     #c.setopt(c.WRITEDATA, None)
     c.setopt(pycurl.USERPWD, '%s:%s' % (user, password))
@@ -53,14 +56,15 @@ class WPS7XRay:
         self.verbose = verbose
 
         # Default WPS7 creds
+        self.host = "energon"
         self.user = None
         self.password = None
 
     def switch(self, n, on):
-        wps7_switch(n, on, user=self.user, password=self.password)
+        wps7_switch(n, on, host=self.host, user=self.user, password=self.password)
 
     def fil_on(self):
-        wps7_switch(self.sw_fil, 1)
+        self.switch(self.sw_fil, 1)
         if self.warm_tstart is None:
             self.warm_tstart = time.time()
 
@@ -68,7 +72,7 @@ class WPS7XRay:
         self.switch(self.sw_fil, 0)
         self.warm = None
 
-    def fil_warm(self, t=None):
+    def warm(self, t=None):
         t = self.warm_time if t is None else t
         self.fil_on()
         time.sleep(t)
@@ -100,3 +104,12 @@ class WPS7XRay:
         finally:
             self.beam_off()
             self.verbose and print('X-RAY: BEAM OFF')
+
+    def get_json(self):
+        return {
+            "wps7": True,
+            "host": self.host,
+        }
+
+    def write_json(self, outdir):
+        util.json_write(os.path.join(outdir, "source.json"), self.get_json())
