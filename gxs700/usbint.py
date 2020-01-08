@@ -11,11 +11,14 @@ import sys
 import time
 import os
 import usb1
+import binascii
 
 from gxs700 import fpga
 from gxs700 import img
 from gxs700 import fw_sm
 from gxs700 import fw_lg
+from gxs700 import util
+from gxs700.img import WH_SM, WH_LG, SIZE_LG, SIZE_SM
 '''
 in many cases index and length are ignored
 if you request less it will return a big message anyway, causing an overflow exception
@@ -178,7 +181,7 @@ def open_dev(usbcontext=None, verbose=None):
     return dev
 
 
-def ez_open_ex(verbose=False, init=True):
+def find_dev(verbose=False):
     usbcontext = usb1.USBContext()
     dev = open_dev(usbcontext, verbose=verbose)
 
@@ -186,17 +189,64 @@ def ez_open_ex(verbose=False, init=True):
     vid = dev.getDevice().getVendorID()
     pid = dev.getDevice().getProductID()
     _desc, size = pidvid2name_post[(vid, pid)]
+    return usbcontext, dev, size
 
-    return usbcontext, dev, usbint.GXS700(
-        usbcontext, dev, verbose=verbose, size=size, init=init)
+def load_all(wait=False, verbose=True):
+    ret = False
+    usbcontext = usb1.USBContext()
+    if verbose:
+        print('Scanning for devices...')
+    for udev in usbcontext.getDeviceList(skip_on_error=True):
+        vid = udev.getVendorID()
+        pid = udev.getProductID()
+
+        try:
+            desc, fwmod = pidvid2name_pre[(vid, pid)]
+        except KeyError:
+            continue
+
+        if verbose:
+            print("")
+            print("")
+            print('Found device (pre-FW): %s' % desc)
+            print('Bus %03i Device %03i: ID %04x:%04x' % (
+                udev.getBusNumber(), udev.getDeviceAddress(), vid, pid))
+            print('Loading firmware')
+        load(udev.open(), fwmod)
+        if verbose:
+            print('Firmware load OK')
+        ret = True
+
+    if ret and wait:
+        print('Waiting for device to come up')
+        tstart = time.time()
+        while time.time() - tstart < 3.0:
+            udev = check_device()
+            if udev:
+                break
+        else:
+            raise Exception("Renumeration timed out")
+        print('Up after %0.1f sec' % (time.time() - tstart, ))
+
+    return ret
 
 
-def ez_open(verbose=False):
-    _usbcontext, _dev, gxs700 = ez_open_ex(verbose)
-    return gxs700
 
+'''
+FIXME: extract firmware from this and properly pass it to fxload
+'''
 
+def load(dev, fwmod=fw_lg):
+    # Source data: cap1.cap
+    # Source range: 107 - 286
 
+    # 2017-08-07: below comment indicates that I tested small at some point
+    # but I don't have a small so I guess never added supported
+    # TODO: re-verify this and shrink the code
+    # Verified stage1 is the same for gendex small and large
+    fwmod.stage1(dev)
+    # xxx: should sleep here?
+    fwmod.stage2(dev)
 
 class GXS700:
     '''
@@ -206,9 +256,8 @@ class GXS700:
 
     def __init__(
             self,
-            usbcontext=None,
-            dev=None,
             verbose=False,
+            usbstuff = None,
             init=True,
             size=2,
             do_printm=True,
@@ -216,17 +265,29 @@ class GXS700:
             int_t=None,
     ):
         self.verbose = verbose
-        self.usbcontext = usbcontext
-        self.dev = dev
+
+        if usbstuff:
+            self.usbcontext, self.dev, size = usbstuff
+        else:
+            self.usbcontext, self.dev, size = find_dev(verbose=verbose)
+        self.set_size(size)
+
+        
         self.timeout = 0
         self.wait_trig_cb = lambda: None
-        self.set_size(size)
+        
         self.do_printm = do_printm
         self.cap_mode = 'norm' if cap_mode is None else cap_mode
         # 0x2BC => 700 ms
-        self.int_t = 700 if int_t is None else int_t
+        self.set_int_t(700 if int_t is None else int_t)
         if init:
             self._init()
+
+    def set_int_t(self, int_t):
+        self.int_t = int_t
+
+    def set_cap_mode(self, cap_mode):
+        self.cap_mode = cap_mode
 
     def printm(self, msg):
         if self.do_printm:
@@ -754,7 +815,7 @@ class GXS700:
                             (self.FRAME_SZ, len(all_dat)))
         return all_dat
 
-    def _cap_bin(self, scan_cb=lambda itr: None):
+    def _cap_bin(self, scan_cb=lambda itr: None, force_trig=False):
         '''Capture a raw binary frame, waiting for trigger'''
         # For firing x-ray
         self.wait_trig_cb()
@@ -762,6 +823,9 @@ class GXS700:
         state_last = self.state()
         i = 0
         while True:
+            if force_trig and i == 0:
+                print('Forcing trigger')
+                self.sw_trig()
             scan_cb(i)
 
             state = self.state()
@@ -794,7 +858,8 @@ class GXS700:
                  n,
                  cap_cb,
                  loop_cb=lambda: None,
-                 scan_cb=lambda itr: None):
+                 scan_cb=lambda itr: None,
+                 force_trig=False):
         self.hw_trig_arm()
         self.chk_state()
         self.chk_error()
@@ -807,10 +872,10 @@ class GXS700:
         taken = 0
         while taken < n:
             tstart = time.time()
-            imgb = self._cap_bin(scan_cb=scan_cb)
+            imgb = self._cap_bin(scan_cb=scan_cb, force_trig=force_trig)
             tend = time.time()
             self.printm('Frame captured in %0.1f sec' % (tend - tstart, ))
-            rc = cap_cb(imgb)
+            rc = cap_cb(taken, imgb)
             # hack: consider doing something else
             if rc:
                 n += 1
@@ -835,13 +900,13 @@ class GXS700:
 
         self.hw_trig_disarm()
 
-    def cap_bin(self, scan_cb=lambda itr: None):
+    def cap_bin(self, scan_cb=lambda itr: None, force_trig=False):
         ret = []
 
         def cb(buff):
             ret.append(buff)
 
-        self.cap_binv(1, cb, scan_cb=scan_cb)
+        self.cap_binv(1, cb, scan_cb=scan_cb, force_trig=force_trig)
         return ret[0]
 
     def cap_img(self):
@@ -856,59 +921,22 @@ class GXS700:
     def decode(buff):
         return img.decode(buff)
 
-
-def load_all(wait=False, verbose=True):
-    ret = False
-    usbcontext = usb1.USBContext()
-    if verbose:
-        print('Scanning for devices...')
-    for udev in usbcontext.getDeviceList(skip_on_error=True):
-        vid = udev.getVendorID()
-        pid = udev.getProductID()
-
+    def get_json(self, force_trig=None):
+        sn_flash = sn_flash_r(self)
         try:
-            desc, fwmod = pidvid2name_pre[(vid, pid)]
-        except KeyError:
-            continue
-
-        if verbose:
-            print("")
-            print("")
-            print('Found device (pre-FW): %s' % desc)
-            print('Bus %03i Device %03i: ID %04x:%04x' % (
-                udev.getBusNumber(), udev.getDeviceAddress(), vid, pid))
-            print('Loading firmware')
-        load(udev.open(), fwmod)
-        if verbose:
-            print('Firmware load OK')
-        ret = True
-
-    if ret and wait:
-        print('Waiting for device to come up')
-        tstart = time.time()
-        while time.time() - tstart < 3.0:
-            udev = usbint.check_device()
-            if udev:
-                break
-        else:
-            raise Exception("Renumeration timed out")
-        print('Up after %0.1f sec' % (time.time() - tstart, ))
-
-    return ret
-
-
-'''
-FIXME: extract firmware from this and properly pass it to fxload
-'''
-
-def load(dev, fwmod=fw_lg):
-    # Source data: cap1.cap
-    # Source range: 107 - 286
-
-    # 2017-08-07: below comment indicates that I tested small at some point
-    # but I don't have a small so I guess never added supported
-    # TODO: re-verify this and shrink the code
-    # Verified stage1 is the same for gendex small and large
-    fwmod.stage1(dev)
-    # xxx: should sleep here?
-    fwmod.stage2(dev)
+            sn_eeprom = sn_eeprom_r(self)
+        except:
+            sn_eeprom = None
+    
+        return {
+            'size': self.size,
+            'sn_flash': sn_flash,
+            'sn_eeprom': sn_eeprom,
+            'int_time': self.int_time(),
+            'trig_params': binascii.hexlify(self.trig_param_r()),
+            'force_trig': util.json_bool(force_trig),
+            'mode': cap_mode2s(self.cap_mode)
+        }
+    
+    def write_json(self, outdir, *args, **kwargs):
+        util.json_write(os.path.join(outdir, "sensor.json"), self.get_json(*args, **kwargs))

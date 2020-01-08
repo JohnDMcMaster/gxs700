@@ -1,5 +1,6 @@
 import struct
 import numpy as np
+from PIL import Image, ImageOps
 
 # enum
 SIZE_SM = 1
@@ -85,7 +86,7 @@ def decode_i16(buff, wh=None):
     '''
     Given raw bin return PIL image object
     '''
-    width, height = wh or usbint.sz_wh(len(buff))
+    width, height = wh or sz_wh(len(buff))
     # Some older files had extra data
     # Consider removing in favor of just truncating the files on disk
     buff = str(buff[0:2 * width * height])
@@ -95,7 +96,7 @@ def decode_i16(buff, wh=None):
     # IOError: not supported for this image mode
     # im =  PIL.ImageOps.invert(im)
     im = im_inv16_slow(im)
-    im = im.transpose(PIL.Image.ROTATE_270)
+    im = im.transpose(Image.ROTATE_270)
     return im
 
 
@@ -123,21 +124,21 @@ def histeq_im(im, nbr_bins=256):
 # Can I get it to work with mode I somehow instead?
 def decode_l8(buff, wh=None):
     '''Given bin return PIL image object'''
-    width, height = wh or img.sz_wh(len(buff))
+    width, height = wh or sz_wh(len(buff))
     buff = str(buff[0:2 * width * height])
 
     # http://pillow.readthedocs.io/en/3.1.x/handbook/writing-your-own-file-decoder.html
     # http://svn.effbot.org/public/tags/pil-1.1.4/libImaging/Unpack.c
     img = Image.frombytes('L', (width, height), buff, "raw", "L;16", 0, -1)
-    img = PIL.ImageOps.invert(img)
-    img = img.transpose(PIL.Image.ROTATE_270)
+    img = ImageOps.invert(img)
+    img = img.transpose(Image.ROTATE_270)
     return img
 
 
 def decode(buff, wh=None):
     '''Given bin return PIL image object'''
     depth = 2
-    width, height = wh or img.sz_wh(len(buff))
+    width, height = wh or sz_wh(len(buff))
     buff = bytearray(buff)
 
     # no need to reallocate each loop

@@ -4,6 +4,9 @@ import datetime
 import shutil
 import os
 import tempfile
+import glob
+import errno
+import json
 
 def add_bool_arg(parser, yes_arg, default=False, **kwargs):
     dashed = yes_arg.replace('--', '')
@@ -176,3 +179,39 @@ class AutoTempFN:
             os.unlink(self.name)
         except:
             pass
+
+def default_date_dir(root, prefix, postfix):
+    datestr = datetime.datetime.now().isoformat()[0:10]
+
+    if prefix:
+        prefix = prefix + '_'
+    else:
+        prefix = ''
+
+    n = 1
+    while True:
+        fn = os.path.join(root, '%s%s_%02u' % (prefix, datestr, n))
+        if len(glob.glob(fn + '*')) == 0:
+            if postfix:
+                return fn + '_' + postfix
+            else:
+                return fn
+        n += 1
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+
+def json_write(fn, j):
+    open(fn, 'w').write(json.dumps(j, sort_keys=True, indent=4, separators=(',', ': ')))
+
+def json_bool(v):
+    if v is None:
+        return None
+    else:
+        return bool(v)

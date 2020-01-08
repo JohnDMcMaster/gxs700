@@ -12,92 +12,61 @@ import binascii
 import json
 
 
-def meta(gxs):
-    sn_flash = usbint.sn_flash_r(gxs)
-    try:
-        sn_eeprom = usbint.sn_eeprom_r(gxs)
-    except:
-        sn_eeprom = None
-
-    return {
-        'size': gxs.size,
-        'sn_flash': sn_flash,
-        'sn_eeprom': sn_eeprom,
-        'int_time': gxs.int_time(),
-        'trig_params': binascii.hexlify(gxs.trig_param_r()),
-        'mode': usbint.cap_mode2s(gxs.cap_mode)
-    }
-
-
 def run(
-        force,
+        outdir=None,
+        postfix=None,
+        imgn=None,
+        force_trig=False,
         cap_mode=None,
         int_t=None,
         ctr_thresh=None,
         bin_thresh=None,
-):
+        bin_out=False, png_out=True,
+        meta_out=True,
+        ):
 
-    itrs = [None]
+    if not outdir:
+        outdir = util.default_date_dir("out", "", postfix)
+    if not os.path.exists(outdir):
+        util.mkdir_p(outdir)
 
-    def scan_cb(itr):
-        itrs[0] = itr
-        if force and itr == 0:
-            print('Forcing trigger')
-            gxs.sw_trig()
+    def cb(n, imgb):
+        binfn = os.path.join(outdir, "cap_%02u.bin" % n)
+        pngfn = os.path.join(outdir, "cap_%02u.png" % n)
 
-    def cb(imgb):
-        base = os.path.join(args.dir, 'capture_%03d' % imagen[0])
-        if args.bin:
-            fn = base + '.bin'
-            print('Writing %s' % fn)
-            open(fn, 'w').write(imgb)
+        if bin_out:
+            print('Writing %s' % binfn)
+            open(binfn, 'w').write(imgb)
 
-        if args.png:
-            pngfn = base + '.png'
+        if png_out:
             print('Decoding image...')
             img = usbint.GXS700.decode(imgb)
             print('Writing %s...' % pngfn)
             img.save(pngfn)
 
-        if args.meta:
+        if meta_out:
             print('Saving meta...')
-            fn = base + '.json'
-            j = {
-                'sensor': meta(gxs),
-                'force': force,
-            }
-            json.dump(j, open(fn, 'w'), indent=4, sort_keys=True)
+            gxs.write_json(outdir, force_trig=force_trig)
 
-        imagen[0] += 1
-
-    _usbcontext, _dev, gxs = usbint.ez_open_ex(verbose=args.verbose, init=False)
+    gxs = usbint.GXS700()
 
     if cap_mode:
-        gxs.cap_mode = cap_mode
+        gxs.set_cap_mode(cap_mode)
     if int_t:
-        gxs.int_t = int_t
+        gxs.set_int_t(int_t)
     if ctr_thresh or bin_thresh:
         gxs.trig_param_w(
             pix_clust_ctr_thresh=ctr_thresh, bin_thresh=bin_thresh)
     gxs._init()
-    #gxs.fpga_off()
 
-    if not os.path.exists(args.dir):
-        os.mkdir(args.dir)
-
-    imagen = [0]
-    while glob.glob('%s/capture_%03d*' % (args.dir, imagen[0])):
-        imagen[0] += 1
-    print('Taking first image to %s' % ('%s/capture_%03d.bin' %
-                                        (args.dir, imagen[0]), ))
-
-    gxs.cap_binv(args.number, cb, scan_cb=scan_cb)
+    gxs.cap_binv(imgn, cb, force_trig=force_trig)
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description='Replay captured USB packets')
     parser.add_argument('--verbose', '-v', action='store_true', help='verbose')
-    parser.add_argument('--dir', default='out', help='Output dir')
+    parser.add_argument('--dir', default='', help='Output dir')
+    parser.add_argument('--postfix', default='', help='Default output dir postfix')
     parser.add_argument(
         '--force', '-f', action='store_true', help='Force trigger')
     parser.add_argument(
@@ -120,18 +89,18 @@ if __name__ == "__main__":
         '--bin', '-b', action='store_true', help='Write .bin raw data capture')
     util.add_bool_arg(
         parser, '--png', default=True, help='Write normal .png image file')
-    parser.add_argument(
-        '--hist-eq',
-        '-e',
-        action='store_true',
-        help='Write histogram equalized .png image file')
-    util.add_bool_arg(
-        parser, '--meta', default=True, help='Write metadata .json file')
 
     args = parser.parse_args()
 
-    run(force=args.force,
+    run(
+        outdir=args.dir,
+        postfix=args.postfix,
+        imgn=args.number,
+        force_trig=args.force,
         cap_mode=args.cap_mode,
         int_t=args.int_t,
         ctr_thresh=args.ctr_thresh,
         bin_thresh=args.bin_thresh)
+
+if __name__ == "__main__":
+    main()
