@@ -81,7 +81,7 @@ def im_inv16_slow(im):
     ret = Image.fromarray(im32_1d.reshape(im32_2d.shape))
     return ret
 
-
+"""
 def decode_i16(buff, wh=None):
     '''
     Given raw bin return PIL image object
@@ -98,6 +98,7 @@ def decode_i16(buff, wh=None):
     im = im_inv16_slow(im)
     im = im.transpose(Image.ROTATE_270)
     return im
+"""
 
 
 # Tried to do
@@ -120,6 +121,7 @@ def histeq_im(im, nbr_bins=256):
     return imf.convert("I")
 
 
+"""
 # This sort of works, but gives an 8 bit image
 # Can I get it to work with mode I somehow instead?
 def decode_l8(buff, wh=None):
@@ -133,6 +135,7 @@ def decode_l8(buff, wh=None):
     img = ImageOps.invert(img)
     img = img.transpose(Image.ROTATE_270)
     return img
+"""
 
 
 def decode(buff, wh=None):
@@ -149,16 +152,7 @@ def decode(buff, wh=None):
         for x in range(width):
             b0 = line0[2 * x + 0]
             b1 = line0[2 * x + 1]
-
             G = (b1 << 8) + b0
-            # optional 16-bit pixel truncation to turn into 8-bit PNG
-            # G = b1
-
-            # In most x-rays white is the part that blocks the x-rays
-            # however, the camera reports brightness (unimpeded x-rays)
-            # compliment to give in conventional form per above
-            G = 0xFFFF - G
-
             img.putpixel((y, x), G)
     return img
 
