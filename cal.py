@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 """
 Looking over:
 https://stackoverflow.com/questions/18951500/automatically-remove-hot-dead-pixels-from-an-image-in-python
@@ -22,8 +21,6 @@ import os
 import sys
 import time
 import usb1
-
-
 """
 def bad_pixs_ff1(fff, ffi):
     ffmed = np.median(fff)
@@ -36,9 +33,11 @@ def bad_pixs_ff1(fff, ffi):
     #y = i // width
 """
 
+
 def bad_pixs_ff(fff, ffi, thresh_scalar=0.25):
     ffmed = np.median(fff)
-    print("min: %0.1f, med: %0.1f, max: %0.1f" % (np.amin(fff), ffmed, np.amax(fff)))
+    print("min: %0.1f, med: %0.1f, max: %0.1f" % (np.amin(fff), ffmed,
+                                                  np.amax(fff)))
 
     ret = []
     width, height = ffi.size
@@ -54,9 +53,11 @@ def bad_pixs_ff(fff, ffi, thresh_scalar=0.25):
     print("Cold pixels: %u / %u" % (len(ret), width * height))
     return ret
 
+
 def bad_pixs_df(fff, ffi, thresh_scalar=0.25):
     ffmed = np.median(fff)
-    print("min: %0.1f, med: %0.1f, max: %0.1f" % (np.amin(fff), ffmed, np.amax(fff)))
+    print("min: %0.1f, med: %0.1f, max: %0.1f" % (np.amin(fff), ffmed,
+                                                  np.amax(fff)))
 
     ret = []
     width, height = ffi.size
@@ -74,18 +75,23 @@ def bad_pixs_df(fff, ffi, thresh_scalar=0.25):
     print("Hot pixels: %u / %u" % (len(ret), width * height))
     return ret
 
+
 def main():
-    import argparse 
-    
+    import argparse
+
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--images', type=int, default=0, help='Only take first n images, for debugging')
+    parser.add_argument(
+        '--images',
+        type=int,
+        default=0,
+        help='Only take first n images, for debugging')
     parser.add_argument('--ff-thresh', default=0.25, type=float, help='')
     parser.add_argument('--df-thresh', default=0.25, type=float, help='')
     parser.add_argument('ff_dir', help='')
     parser.add_argument('df_dir', help='')
     parser.add_argument('cal_dir', nargs='?', default=None, help='')
     args = parser.parse_args()
-    
+
     cal_dir = args.cal_dir
     if not cal_dir:
         cal_dir_ff = im_util.default_cal_dir(im_dir=args.ff_dir)
@@ -109,11 +115,11 @@ def main():
         badimg.putpixel((x, y), 1)
 
     badimg.save(cal_dir + '/bad.png')
-    
+
     print("done")
+
 
 if __name__ == "__main__":
     #im = Image.fromarray(np.asarray([[1, 2, 3], [4, 5, 6]]), mode="I")
     #im.show()
     main()
-

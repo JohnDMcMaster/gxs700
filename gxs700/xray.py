@@ -9,6 +9,7 @@ import os
 import time
 from gxs700 import util
 
+
 class XRay:
     def __init__(self):
         pass
@@ -25,6 +26,7 @@ class XRay:
     def beam_off(self):
         pass
 
+
 def wps7_switch(n, on, host=None, user=None, password=None):
     host = os.getenv('WPS7_HOST', None) if host is None else host
     assert host
@@ -39,12 +41,15 @@ def wps7_switch(n, on, host=None, user=None, password=None):
     c.perform()
     c.close()
 
+
 """
 GE1000 head
 IIRC roughly 10% duty cycle at max power is safe
 15 mA @ 80 kV = 1200 W
 10 mA @ 90 kV = 900 W
 """
+
+
 class WPS7XRay:
     def __init__(self, verbose=False):
         # Assume not fired
@@ -61,7 +66,8 @@ class WPS7XRay:
         self.password = None
 
     def switch(self, n, on):
-        wps7_switch(n, on, host=self.host, user=self.user, password=self.password)
+        wps7_switch(
+            n, on, host=self.host, user=self.user, password=self.password)
 
     def fil_on(self):
         self.switch(self.sw_fil, 1)
@@ -79,7 +85,8 @@ class WPS7XRay:
         assert self.iswarm()
 
     def iswarm(self):
-        return self.warm_tstart and time.time() - self.warm_tstart >= self.warm_time 
+        return self.warm_tstart and time.time(
+        ) - self.warm_tstart >= self.warm_time
 
     def beam_on(self):
         self.switch(self.sw_hv, 1)
@@ -96,7 +103,7 @@ class WPS7XRay:
             while time.time() - self.fire_last < 30:
                 time.sleep(0.1)
             self.verbose and print('Head ready')
-    
+
             self.verbose and print('X-RAY: BEAM ON')
             self.beam_on()
             self.fire_last = time.time()

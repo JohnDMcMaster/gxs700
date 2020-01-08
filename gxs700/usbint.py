@@ -54,7 +54,6 @@ cm_s2i = {
 cm_i2s = {}
 for s, i in cm_s2i.items():
     cm_i2s[i] = s
-
 '''
 small sensor from adam
 both large and small enumerate the same
@@ -87,8 +86,6 @@ pidvid2name_post = {
     (0x5328, 0x2020): ('Gendex GXS700SM (post enumeration)', 1),
     (0x5328, 0x2030): ('Gendex GXS700LG (post enumeration)', 2),
 }
-
-
 
 
 def cap_mode2i(mode):
@@ -130,9 +127,6 @@ def sn_eeprom_r(gxs):
     return int(s)
 
 
-
-
-
 def check_device(usbcontext=None, verbose=True):
     if usbcontext is None:
         usbcontext = usb1.USBContext()
@@ -150,8 +144,8 @@ def check_device(usbcontext=None, verbose=True):
             print("")
             print("")
             print('Found device (post-FW): %s' % desc)
-            print('Bus %03i Device %03i: ID %04x:%04x' % (
-                udev.getBusNumber(), udev.getDeviceAddress(), vid, pid))
+            print('Bus %03i Device %03i: ID %04x:%04x' %
+                  (udev.getBusNumber(), udev.getDeviceAddress(), vid, pid))
         return udev
     return None
 
@@ -192,6 +186,7 @@ def find_dev(verbose=False):
     _desc, size = pidvid2name_post[(vid, pid)]
     return usbcontext, dev, size
 
+
 def load_all(wait=False, verbose=True):
     ret = False
     usbcontext = usb1.USBContext()
@@ -210,8 +205,8 @@ def load_all(wait=False, verbose=True):
             print("")
             print("")
             print('Found device (pre-FW): %s' % desc)
-            print('Bus %03i Device %03i: ID %04x:%04x' % (
-                udev.getBusNumber(), udev.getDeviceAddress(), vid, pid))
+            print('Bus %03i Device %03i: ID %04x:%04x' %
+                  (udev.getBusNumber(), udev.getDeviceAddress(), vid, pid))
             print('Loading firmware')
         load(udev.open(), fwmod)
         if verbose:
@@ -232,10 +227,10 @@ def load_all(wait=False, verbose=True):
     return ret
 
 
-
 '''
 FIXME: extract firmware from this and properly pass it to fxload
 '''
+
 
 def load(dev, fwmod=fw_lg):
     # Source data: cap1.cap
@@ -249,6 +244,7 @@ def load(dev, fwmod=fw_lg):
     # xxx: should sleep here?
     fwmod.stage2(dev)
 
+
 class GXS700:
     '''
     Size 1: small
@@ -258,7 +254,7 @@ class GXS700:
     def __init__(
             self,
             verbose=False,
-            usbstuff = None,
+            usbstuff=None,
             init=True,
             size=2,
             do_print=True,
@@ -273,10 +269,9 @@ class GXS700:
             self.usbcontext, self.dev, size = find_dev(verbose=verbose)
         self.set_size(size)
 
-        
         self.timeout = 0
         self.wait_trig_cb = lambda: None
-        
+
         self.do_printm = do_print
         self.cap_mode = 'norm' if cap_mode is None else cap_mode
         # 0x2BC => 700 ms
@@ -519,8 +514,8 @@ class GXS700:
         buff = bytearray(buff)
         print("MCU:     %s.%s.%s" % (buff[0], buff[1], buff[2] << 8 | buff[3]))
         print('FPGA:    %s.%s.%s' % (buff[4], buff[5], buff[6] << 8 | buff[7]))
-        print('FGPA WG: %s.%s.%s' % (buff[8], buff[9],
-                                     buff[10] << 8 | buff[11]))
+        print(
+            'FGPA WG: %s.%s.%s' % (buff[8], buff[9], buff[10] << 8 | buff[11]))
 
     def img_ctr_r(self, n=8):
         # think n is ignored
@@ -831,14 +826,14 @@ class GXS700:
                     print('Forcing trigger')
                     self.sw_trig()
                 scan_cb(i)
-    
+
                 state = self.state()
                 if state != state_last:
                     self.printm('New state %s (scan %d)' % (state, i))
-            
+
                 if i % 1000 == 0:
                     self.printm('scan %d (state %s)' % (i, state))
-    
+
                 # See state() for comments on state values
                 # Large
                 if self.capture_ready(state):
@@ -849,9 +844,9 @@ class GXS700:
                 elif state != 0x01:
                     # print 'Transient state %s' % state
                     pass
-    
+
                 self.chk_error()
-    
+
                 i = i + 1
                 state_last = state
         finally:
@@ -928,7 +923,7 @@ class GXS700:
             sn_eeprom = sn_eeprom_r(self)
         except:
             sn_eeprom = None
-    
+
         return {
             'size': self.size,
             'sn_flash': util.json_str(sn_flash),
@@ -938,6 +933,8 @@ class GXS700:
             'force_trig': util.json_bool(force_trig),
             'mode': cap_mode2s(self.cap_mode)
         }
-    
+
     def write_json(self, outdir, *args, **kwargs):
-        util.json_write(os.path.join(outdir, "sensor.json"), self.get_json(*args, **kwargs))
+        util.json_write(
+            os.path.join(outdir, "sensor.json"), self.get_json(
+                *args, **kwargs))

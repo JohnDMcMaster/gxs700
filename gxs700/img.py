@@ -28,7 +28,6 @@ def sz_wh(sz):
         raise ValueError("Bad buffer size %s" % sz)
 
 
-
 def raw2npim1(buff):
     '''Given raw string, return 1d array of 16 bit unpacked values'''
     depth = 2
@@ -41,8 +40,10 @@ def raw2npim1(buff):
         imnp[i] = unpack_pix(buff[y:y + 2])
     return imnp
 
+
 def get_bufF_sz(sz):
     return {1: SZ_SM, 2: SZ_LG}[sz]
+
 
 def histeq_np(npim, nbr_bins=256):
     '''
@@ -80,6 +81,7 @@ def im_inv16_slow(im):
         im32_1d[i] = 0xFFFF - p
     ret = Image.fromarray(im32_1d.reshape(im32_2d.shape))
     return ret
+
 
 """
 def decode_i16(buff, wh=None):
@@ -177,4 +179,3 @@ def im2bin(im):
             line0[2 * x + 1] = b1
         ret += line0
     return ret
-

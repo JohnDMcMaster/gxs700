@@ -5,6 +5,7 @@ import glob
 import os
 import json
 
+
 def parse_roi(s):
     if s is None:
         return None
@@ -34,6 +35,7 @@ def npf2im(statef):
 
     return im
 
+
 def average_imgs(imgs, scalar=None):
     width, height = imgs[0].size
     if not scalar:
@@ -46,6 +48,7 @@ def average_imgs(imgs, scalar=None):
         statef = statef + scalar * np.array(im, dtype=np.float)
 
     return statef, npf2im(statef)
+
 
 def average_dir(din, images=0, verbose=1, scalar=None):
     imgs = []
@@ -60,6 +63,7 @@ def average_dir(din, images=0, verbose=1, scalar=None):
             break
     return average_imgs(imgs, scalar=scalar)
 
+
 # Tried misc other things but this was only thing I could make work
 def im_inv16_slow(im):
     '''Invert 16 bit image pixels'''
@@ -69,6 +73,7 @@ def im_inv16_slow(im):
         im32_1d[i] = 0xFFFF - p
     ret = Image.fromarray(im32_1d.reshape(im32_2d.shape))
     return ret
+
 
 def default_cal_dir(j=None, im_dir=None):
     if im_dir:
@@ -89,6 +94,7 @@ def default_cal_dir(j=None, im_dir=None):
     # EEPROM is sometimes erased, but flash never is
     return os.path.join("cal", j["sn_flash"])
 
+
 def histeq_im(im, nbr_bins=256):
     imnp2 = np.array(im)
     imnp2_eq = histeq_np(imnp2, nbr_bins=nbr_bins)
@@ -102,7 +108,7 @@ def histeq_np(npim, nbr_bins=256):
     That is, return 2D if given 2D, or 1D if 1D
     '''
     return histeq_np_apply(npim, histeq_np_create(npim, nbr_bins=nbr_bins))
-    
+
 
 def histeq_np_create(npim, nbr_bins=256, verbose=0):
     '''
@@ -116,11 +122,12 @@ def histeq_np_create(npim, nbr_bins=256, verbose=0):
     imhist, bins = np.histogram(flat, nbr_bins, normed=True)
     verbose and print('imhist', imhist)
     verbose and print('imhist', bins)
-    cdf = imhist.cumsum() #cumulative distribution function
+    cdf = imhist.cumsum()  #cumulative distribution function
     verbose and print('cdfraw', cdf)
-    cdf = 0xFFFF * cdf / cdf[-1] #normalize
+    cdf = 0xFFFF * cdf / cdf[-1]  #normalize
     verbose and print('cdfnorm', cdf)
     return cdf, bins
+
 
 def histeq_np_apply(npim, create):
     cdf, bins = create

@@ -21,10 +21,11 @@ def run(
         int_t=None,
         ctr_thresh=None,
         bin_thresh=None,
-        bin_out=False, png_out=True,
+        bin_out=False,
+        png_out=True,
         meta_out=True,
         xr=None,
-        ):
+):
 
     print("Preparing capture")
 
@@ -69,7 +70,8 @@ def main():
     parser = argparse.ArgumentParser(description='Replay captured USB packets')
     parser.add_argument('--verbose', '-v', action='store_true', help='verbose')
     parser.add_argument('--dir', default='', help='Output dir')
-    parser.add_argument('--postfix', default='', help='Default output dir postfix')
+    parser.add_argument(
+        '--postfix', default='', help='Default output dir postfix')
     parser.add_argument(
         '--force', '-f', action='store_true', help='Force trigger')
     parser.add_argument(
@@ -95,8 +97,7 @@ def main():
 
     args = parser.parse_args()
 
-    run(
-        outdir=args.dir,
+    run(outdir=args.dir,
         postfix=args.postfix,
         imgn=args.number,
         force_trig=args.force,
@@ -104,6 +105,7 @@ def main():
         int_t=args.int_t,
         ctr_thresh=args.ctr_thresh,
         bin_thresh=args.bin_thresh)
+
 
 if __name__ == "__main__":
     main()

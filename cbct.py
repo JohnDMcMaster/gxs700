@@ -40,7 +40,7 @@ if __name__ == "__main__":
     usbcontext, dev, gxs = gxs700.usbint.ez_open_ex(verbose=args.verbose)
 
     fn = ''
-    
+
     xray = WPS7XRay()
 
     print('Warming filament...')
@@ -76,8 +76,8 @@ if __name__ == "__main__":
             ctn += 1
         fn_d = 'ct_%03d' % ctn
         os.mkdir(fn_d)
-        print('Taking first image to %s' % ('%s/ct_%03d.bin' %
-                                            (fn_d, imagen), ))
+        print(
+            'Taking first image to %s' % ('%s/ct_%03d.bin' % (fn_d, imagen), ))
 
         def fire():
             xray.fire(3)
