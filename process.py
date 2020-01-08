@@ -43,6 +43,8 @@ def im_med3(im, x, y, badimg):
                 continue
             if not badimg.getpixel((xp, yp)):
                 pixs.append(im.getpixel((xp, yp)))
+    if len(pixs) == 0:
+        return 0
     return int(statistics.median(pixs))
 
 
