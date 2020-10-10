@@ -51,7 +51,7 @@ IIRC roughly 10% duty cycle at max power is safe
 
 
 class WPS7XRay:
-    def __init__(self, verbose=False):
+    def __init__(self, verbose=False, dry=False):
         # Assume not fired
         self.fire_last = 0
         self.warm_tstart = None
@@ -59,11 +59,20 @@ class WPS7XRay:
         self.sw_hv = 2
         self.warm_time = 5
         self.verbose = verbose
+        self.dry = dry
 
         # Default WPS7 creds
         self.host = "energon"
         self.user = None
         self.password = None
+
+    def __del__(self):
+        self.off()
+
+    def off(self):
+        self.beam_off()
+        time.sleep(0.2)
+        self.fil_off()
 
     def switch(self, n, on):
         wps7_switch(
@@ -81,6 +90,8 @@ class WPS7XRay:
     def warm(self, t=None):
         t = self.warm_time if t is None else t
         self.fil_on()
+        if self.dry:
+            return
         time.sleep(t)
         assert self.iswarm()
 
@@ -95,6 +106,10 @@ class WPS7XRay:
         self.switch(self.sw_hv, 0)
 
     def fire(self, t):
+        if self.dry:
+            return
+        if not self.iswarm():
+            self.warm()
         try:
             assert self.iswarm()
 
