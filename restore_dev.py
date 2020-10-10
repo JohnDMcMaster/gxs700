@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import gxs700.util
 from uvscada import util
 

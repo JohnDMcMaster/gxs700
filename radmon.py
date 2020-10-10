@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 x-ray camera based radiation montior
 I'm flying from Taipei to Tokyo and happen to have a sensor on me

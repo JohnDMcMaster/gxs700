@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 '''
 with the bad eeprom connected it didn't register sensor ID
 however it did still do state probes

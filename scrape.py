@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from uvscada.util import str2hex
 
 import re

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 '''
 Related tools:
 -fxload: tool that we want to feed into (also IDA...)

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 from setuptools import setup
 import shutil
@@ -14,7 +15,7 @@ def read(fname):
 if not os.path.exists('build'):
     os.mkdir('build')
 scripts = (
-    'capture.py',
+    'main.py',
     'decode.py',
     'dump_dev.py',
     'hist_eq.py',
@@ -22,6 +23,9 @@ scripts = (
     'img2bin.py',
     'mask.py',
     'cal.py',
+    'fire.py',
+    'raw.py',
+    'process.py',
     #'prog_eeprom.py',
     #'restore_dev.py',
 )
@@ -34,7 +38,7 @@ for script in scripts:
 
 setup(
     name="gxs700",
-    version="1.0.0",
+    version="2.0.0",
     author="John McMaster",
     author_email='JohnDMcMaster@gmail.com',
     description=("Gendex GXS700 / Dexis Platinum USB x-ray sensor driver."),
@@ -46,7 +50,7 @@ setup(
     install_requires=[
         'libusb1',
     ],
-    long_description=read('README.txt'),
+    long_description="gxs700 x-ray go vroom",
     classifiers=[
         "License :: OSI Approved :: BSD License",
     ],
