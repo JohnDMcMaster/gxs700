@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from gxs700 import util
+from gxs700 import usbint
 
 import argparse
 import binascii
@@ -20,27 +21,27 @@ if __name__ == "__main__":
     parser.add_argument('dout', nargs='?', default=None, help='File out')
     args = parser.parse_args()
 
-    usbcontext, dev, gxs = usbint.ez_open_ex(verbose=args.verbose)
+    gxs = usbint.GXS700()
 
-    sn_flash = util.sn_flash_r(gxs)
+    sn_flash = usbint.sn_flash_r(gxs)
     try:
-        sn_eeprom = util.sn_eeprom_r(gxs)
+        sn_eeprom = usbint.sn_eeprom_r(gxs)
     except:
         sn_eeprom = None
-    print 'S/N (flash): %s' % sn_flash
-    print 'S/N (EEPROM): %s' % sn_eeprom
+    print('S/N (flash): %s' % sn_flash)
+    print('S/N (EEPROM): %s' % sn_eeprom)
     if sn_flash != sn_eeprom:
-        print 'WARNING: S/N mismatch'
+        print('WARNING: S/N mismatch')
     sn = sn_flash
 
     if 0 < sn < 1000000000:
-        print '  S/N guess: black Dexis (size 2)'
+        print('  S/N guess: black Dexis (size 2)')
     elif 1000000000 <= sn < 2000000000:
-        print '  S/N guess: blue Gendex (size 1)'
+        print('  S/N guess: blue Gendex (size 1)')
     elif 2000000000 <= sn < 3000000000:
-        print '  S/N guess: blue Gendex (size 2)'
+        print('  S/N guess: blue Gendex (size 2)')
     else:
-        print '  S/N guess: unknown'
+        print('  S/N guess: unknown')
 
     if not args.hexdump:
         #today_str = datetime.datetime.now().isoformat()[0:10]
@@ -57,7 +58,7 @@ if __name__ == "__main__":
                 if not os.path.exists(dout):
                     break
                 i += 1
-        print 'Writing to %s' % dout
+        print('Writing to %s' % dout)
         if not os.path.exists(dout):
             os.mkdir(dout)
         _t = util.IOLog(out_fn=os.path.join(dout, 'out.txt'))
@@ -84,25 +85,25 @@ if __name__ == "__main__":
     '''
 
     if alll:
-        print
-        print 'Versions'
+        print("")
+        print('Versions')
         gxs.versions()
-        open(os.path.join(dout, 'ver.bin'), 'w').write(
-            gxs.versions(decode=False))
+        open(os.path.join(dout, 'ver.bin'), 'wb').write(
+            gxs.versions_raw())
 
-        print
-        print 'FPGA signature: 0x%04X' % gxs.fpga_rsig()
-        print 'State: %d' % gxs.state()
-        print 'Error: %d' % gxs.error()
-        print 'Trigger params: %s' % binascii.hexlify(gxs.trig_param_r())
-        print 'Int time: %s' % gxs.int_time()
-        print 'Img ctr: %s' % binascii.hexlify(gxs.img_ctr_r())
+        print("")
+        print('FPGA signature: 0x%04X' % gxs.fpga_rsig())
+        print('State: %d' % gxs.state())
+        print('Error: %d' % gxs.error())
+        print('Trigger params: %s' % binascii.hexlify(gxs.trig_param_r()))
+        print('Int time: %s' % gxs.int_time())
+        print('Img ctr: %s' % binascii.hexlify(gxs.img_ctr_r()))
 
         w, h = gxs.img_wh()
-        print 'Sensor dimensions: %dw x %dh' % (w, h)
+        print('Sensor dimensions: %dw x %dh' % (w, h))
 
-        print
-        print 'Dumping RAM'
+        print("")
+        print('Dumping RAM')
         '''
         The FX2 has eight kbytes of internal program/data RAM,
         Only the internal eight kbytes and scratch pad 0.5 kbytes RAM spaces have the following access:
@@ -110,37 +111,37 @@ if __name__ == "__main__":
         The available RAM spaces are 8 kbytes from
         0x0000-0x1FFF (code/data) and 512 bytes from 0xE000-0xE1FF (scratch pad RAM).
         '''
-        ram = util.ram_r(dev, 0x0000, 0x10000)
+        ram = usbint.ram_r(gxs.dev, 0x0000, 0x10000)
         open(os.path.join(dout, 'ram.bin'), 'w').write(ram)
 
     if alll or args.eeprom:
-        print 'Dumping EEPROM'
+        print('Dumping EEPROM')
         eeprom = gxs.eeprom_r()
         if args.hexdump:
             util.hexdump(eeprom)
         else:
-            open(os.path.join(dout, 'eeprom.bin'), 'w').write(eeprom)
+            open(os.path.join(dout, 'eeprom.bin'), 'wb').write(eeprom)
 
     if alll or args.flash:
-        print 'Dumping flash'
+        print('Dumping flash')
         flash = gxs.flash_r()
         if args.hexdump:
             util.hexdump(flash)
         else:
-            open(os.path.join(dout, 'flash.bin'), 'w').write(flash)
+            open(os.path.join(dout, 'flash.bin'), 'wb').write(flash)
 
     if alll:
-        print 'Dumping register space'
+        print('Dumping register space')
         f = open(os.path.join(dout, 'regs.csv'), 'w')
         f.write('reg,val\n')
         # slightly faster
         if 1:
-            for kbase in xrange(0x0000, 0x10000, 0x80):
+            for kbase in range(0x0000, 0x10000, 0x80):
                 vs = gxs.fpga_rv(kbase, 0x80)
                 for i, v in enumerate(vs):
                     k = kbase + i
                     f.write('0x%04X,0x%04X\n' % (k, v))
         if 0:
-            for k in xrange(0x0000, 0x10000, 0x1):
+            for k in range(0x0000, 0x10000, 0x1):
                 v = gxs.fpga_r(k)
                 f.write('0x%04X,0x%04X\n' % (k, v))

@@ -505,13 +505,14 @@ class GXS700:
         '''Get exposure timestamp as string'''
         return self.eeprom_r(0x20, 0x17)
 
-    def versions(self, decode=True):
+    def versions_raw(self):
         # index, length ignored
-        buff = self.dev.controlRead(
-            0xC0, 0xB0, 0x51, 0, 0x1C, timeout=self.timeout)
-        if not decode:
-            return buff
-        buff = bytearray(buff)
+        return bytearray(self.dev.controlRead(
+            0xC0, 0xB0, 0x51, 0, 0x1C, timeout=self.timeout))
+
+    def versions(self):
+        # index, length ignored
+        buff = self.versions_raw()
         print("MCU:     %s.%s.%s" % (buff[0], buff[1], buff[2] << 8 | buff[3]))
         print('FPGA:    %s.%s.%s' % (buff[4], buff[5], buff[6] << 8 | buff[7]))
         print(
