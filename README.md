@@ -17,7 +17,7 @@ Now plug in your sensor
 
 # Installation (python2)
 
-Alternatively if you have python3 you might get away with running an old release:
+Alternatively if you have python2 you might get away with running an old release:
 
 ```
 sudo pip install gxs700
