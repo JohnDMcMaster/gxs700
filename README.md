@@ -6,6 +6,7 @@ Open source Gendex GXS700 / Dexis Platinum USB x-ray sensor driver
 Instructions for Ubuntu 16.04
 
 ```
+sudo apt-get install -y git python3-pip python3-numpy fxload
 sudo pip3 install libusb1
 git clone https://github.com/JohnDMcMaster/gxs700.git
 cd gxs700
@@ -14,6 +15,10 @@ sudo python3 setup.py install
 ```
 
 Now plug in your sensor
+
+TODO: add info about *optional* fxload.
+TLDR wanted Windows support so didn't fully move to it
+
 
 # Installation (python2)
 
