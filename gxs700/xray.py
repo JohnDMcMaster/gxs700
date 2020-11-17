@@ -4,7 +4,12 @@ X-ray HAL
 TODO: move to own repo
 """
 
-import pycurl
+# Most users don't need this
+# Make it an optional dependency
+try:
+    import pycurl
+except ImportError:
+    pycurl = None
 import os
 import time
 from gxs700 import util
@@ -52,6 +57,7 @@ IIRC roughly 10% duty cycle at max power is safe
 
 class WPS7XRay:
     def __init__(self, verbose=False, dry=False):
+        assert pycurl, "Requires pycurl (sudo pip3 install pycurl)"
         # Assume not fired
         self.fire_last = 0
         self.warm_tstart = None

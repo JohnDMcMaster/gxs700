@@ -7,7 +7,10 @@ Instructions for Ubuntu 16.04
 
 ```
 sudo apt-get install -y git python3-pip python3-numpy fxload
-sudo pip3 install libusb1
+sudo pip3 install libusb1 scipy
+# Optional for WPS7 x-ray head support
+# Not needed by the vast majority of users
+sudo pip3 install pycurl
 git clone https://github.com/JohnDMcMaster/gxs700.git
 cd gxs700
 sudo ./udev.sh
