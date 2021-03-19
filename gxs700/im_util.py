@@ -119,7 +119,7 @@ def histeq_np_create(npim, nbr_bins=256, verbose=0):
     # get image histogram
     flat = npim.flatten()
     verbose and print('flat', flat)
-    imhist, bins = np.histogram(flat, nbr_bins, normed=True)
+    imhist, bins = np.histogram(flat, nbr_bins)
     verbose and print('imhist', imhist)
     verbose and print('imhist', bins)
     cdf = imhist.cumsum()  #cumulative distribution function

@@ -17,6 +17,10 @@ def main():
     add_bool_arg(parser, "--force-trig", default=None)
     parser.add_argument('--dir', default=None, help='Output dir')
     parser.add_argument(
+        '--cap-mode',
+        default=None,
+        help='Advanced: norm (default), hblock, vblock, vbar')
+    parser.add_argument(
         '--int-t',
         type=int,
         default=None,
@@ -55,6 +59,7 @@ def main():
         raw_main.run(
             outdir=outdir,
             postfix=args.postfix,
+            cap_mode=args.cap_mode,
             imgn=args.n,
             int_t=args.int_t,
             force_trig=force_trig,

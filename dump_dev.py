@@ -112,7 +112,7 @@ if __name__ == "__main__":
         0x0000-0x1FFF (code/data) and 512 bytes from 0xE000-0xE1FF (scratch pad RAM).
         '''
         ram = usbint.ram_r(gxs.dev, 0x0000, 0x10000)
-        open(os.path.join(dout, 'ram.bin'), 'w').write(ram)
+        open(os.path.join(dout, 'ram.bin'), 'wb').write(ram)
 
     if alll or args.eeprom:
         print('Dumping EEPROM')

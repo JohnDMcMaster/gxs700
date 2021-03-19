@@ -114,7 +114,7 @@ def ram_r(dev, addr, datal):
         ret += dev.controlRead(
             0xC0, 0xA0, addr + offset, 0x0000, l, timeout=1000)
         offset += bs
-    return str(ret)
+    return ret
 
 
 def sn_flash_r(gxs):
@@ -283,6 +283,7 @@ class GXS700:
         self.int_t = int_t
 
     def set_cap_mode(self, cap_mode):
+        self.printm("Capture Mode : %s" % (cap_mode))
         self.cap_mode = cap_mode
 
     def printm(self, msg):
@@ -688,7 +689,7 @@ class GXS700:
         state = self.state()
         self.printm('Init state: %d' % state)
         if self.capture_ready(state):
-            self.printm('Flusing stale capture')
+            self.printm('Flushing stale capture')
             self._cap_frame()
         elif state != 0x01:
             raise Exception('Not idle, refusing to setup')
@@ -749,7 +750,7 @@ class GXS700:
 
     def _cap_frame_bulk(self):
         '''
-        Take care of the bulk transaction prat of capturing frames
+        Take care of the bulk transaction part of capturing frames
         Large sensor only
         '''
         '''
@@ -806,8 +807,7 @@ class GXS700:
             all_dat += self.dev.interruptRead(2, 1024, timeout=5000)
         # Packet 12961
         self.dev.setInterfaceAltSetting(0, 0)
-
-        all_dat = str(all_dat[0:self.FRAME_SZ])
+        all_dat = all_dat[0:self.FRAME_SZ]
         if len(all_dat) != self.FRAME_SZ:
             raise Exception("Unexpected buffer size. Want %d, got %d" %
                             (self.FRAME_SZ, len(all_dat)))
