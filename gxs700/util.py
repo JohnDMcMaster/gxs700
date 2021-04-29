@@ -56,7 +56,7 @@ def hexdump(data, label=None, indent='', address_width=8, f=sys.stdout):
 
         f.write(''.join([
             c if isprint(c) else '.'
-            for c in str(data[row_start:row_start + real_data])
+            for c in tostr(data[row_start:row_start + real_data])
         ]))
         f.write((" " * (bytes_per_row - real_data)) + "|\n")
 
