@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-from __future__ import print_function
+#!/usr/bin/env python3
 '''
 TODO: move to uvscada or similar
 
@@ -24,95 +23,87 @@ import sys
 # XXX: this was removed in favor of LinuxCNC
 # Code needs to be ported
 #from uvscada.pr0ndexer import Indexer
-import gxs700.usbint
-import gxs700.util
+from gxs700 import usbint
+from gxs700 import util
+from gxs700 import img
+from gxs700.util import add_bool_arg, default_date_dir
 
 from gxs700.xray import WPS7XRay
 
+from uscope.hal.cnc import lcnc
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Replay captured USB packets')
+    parser.add_argument('--dir', default=None, help='Output dir')
     parser.add_argument('--verbose', '-v', action='store_true', help='verbose')
+    parser.add_argument('--steps', type=int, help='Number of slices per 180 degrees')
+    parser.add_argument('--range', type=float, default=180.0, help='Maximum unit value to sweep')
     args = parser.parse_args()
+
+    force_trig = False
+    bin_out = False
+    png_out = True
+    meta_out = True
+
+    outdir = args.dir
+    if outdir is None:
+        outdir = default_date_dir("out", "", args.postfix)
+    util.mkdir_p(outdir)
 
     if os.getenv('WPS7_PASS', None) is None:
         raise Exception("Requires WPS7 password")
 
-    usbcontext, dev, gxs = gxs700.usbint.ez_open_ex(verbose=args.verbose)
+    hal = lcnc.LcncPyHal(host=args.host,
+                              dry=args.dry)
+    gxs = usbint.GXS700()
 
-    fn = ''
+    xray = args.xray
+    if xray is None:
+        xray = os.getenv('WPS7_HOST', None) is not None
+    print("Opening x-ray")
+    xr = xray.WPS7XRay(verbose=args.verbose)
 
-    xray = WPS7XRay()
-
-    print('Warming filament...')
-    xray.fil_warm()
-    '''
-    Head likes 10% duty cycle
-    3 second pulses
-    About 30 seconds per image
-    
-    AS took 45 images (8 deg steps), follow his example initially
-    400 steps per rev (200 actual * 2 microstep)
-    72 rev => 360 deg =>  deg / rev
-    400 * 8 / 5 = 640 steps each image
-    TODO: verify this works as calculated
-    
-    hmm seems to be 800 per rev
-    w/e, just fix it for now but figure out why later
-    800 * 8 / 5 = 1280 steps each image
-    '''
-    to_take = 1
-    IMG_STEPS = 1280
-    indexer = Indexer(device='/dev/ttyUSB0')
-
-    if 0:
-        indexer.step('X', IMG_STEPS)
-        sys.exit(1)
+    xr.write_json(outdir)
+    xr.warm()
 
     try:
-        ctn = 0
         taken = 0
         imagen = 0
-        while os.path.exists('ct_%03d' % ctn):
-            ctn += 1
-        fn_d = 'ct_%03d' % ctn
-        os.mkdir(fn_d)
-        print(
-            'Taking first image to %s' % ('%s/ct_%03d.bin' % (fn_d, imagen), ))
 
-        def fire():
-            xray.fire(3)
+        def cb(n, imgb):
+            assert n == 1
+            binfn = os.path.join(outdir, "cap_%03u.bin" % imagen)
+            pngfn = os.path.join(outdir, "cap_%03u.png" % imagen)
+    
+            if bin_out:
+                print('Writing %s' % binfn)
+                open(binfn, 'w').write(imgb)
+    
+            if png_out:
+                print('Decoding image...')
+                img = gxs.decode(imgb)
+                print('Writing %s...' % pngfn)
+                img.save(pngfn)
+    
+            if meta_out:
+                print('Saving meta...')
+                gxs.write_json(outdir, force_trig=force_trig)
 
-        gxs.wait_trig_cb = fire
+        # XXX: ideally would be in degrees but might not be
+        step_units = args.range / args.steps
+        print("Rotary step size: %0.3f" % step_units)
 
-        def cap_cb(imgb):
-            global taken
-            global imagen
-
-            fn = '%s/ct_%03d.bin' % (fn_d, imagen)
-            print('Writing %s' % fn)
-            open(fn, 'w').write(imgb)
-
-            fn = '%s/ct_%03d.png' % (fn_d, imagen)
-            print('Decoding %s' % fn)
-            img = gxs700.usbint.GXS700.decode(imgb)
-            print('Writing %s' % fn)
-            img.save(fn)
-
-            taken += 1
-            imagen += 1
-
-            return taken != to_take
-
-        def loop_cb():
-            print('TABLE: rotating')
-            indexer.step('X', IMG_STEPS)
-
-        gxs.cap_binv(1, cap_cb=cap_cb, loop_cb=loop_cb)
+        for imagen in range(args.steps):
+            x = step_units * imagen
+            print('Rotating to %0.3f' % x)
+            hal.mv_abs({'X': x})
+            print('Capturing...')
+            gxs.cap_binv(1, cb, force_trig=force_trig, xr=xr)
     finally:
         # Just in case
         print('X-RAY: BEAM OFF (on exit)')
         try:
-            xray.beam_off()
+            xr.beam_off()
         except:
             print('*' * 80)
             print('WARNING: FAILED TO DISARM X-RAY!!!')
