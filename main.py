@@ -6,6 +6,7 @@ from gxs700 import xray
 from gxs700 import util
 from gxs700 import process_main
 from gxs700 import raw_main
+from gxs700.xray import WPS7XRay
 import os
 
 def main():
@@ -42,9 +43,10 @@ def main():
     xray = args.xray
     if xray is None:
         xray = os.getenv('WPS7_HOST', None) is not None
-    if xray:
+    # Never create x-ray if forcing trigger
+    if xray and not args.force_trig:
         print("Opening x-ray")
-        xr = xray.WPS7XRay(verbose=args.verbose)
+        xr = WPS7XRay(verbose=args.verbose)
         util.mkdir_p(outdir)
         xr.write_json(outdir)
         xr.warm()
