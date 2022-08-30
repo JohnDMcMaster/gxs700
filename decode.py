@@ -8,11 +8,11 @@ import glob
 
 
 def process_bin(fin, fout):
-    print 'Reading %s...' % fin
+    print('Reading %s...' % fin)
     buff = open(fin, 'r').read()
-    print 'Decoding image...'
+    print('Decoding image...')
     img = usbint.GXS700.decode(buff)
-    print 'Saving %s...' % fout
+    print('Saving %s...' % fout)
     img.save(fout)
 
 

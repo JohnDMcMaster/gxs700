@@ -36,7 +36,12 @@ if __name__ == "__main__":
         '--gray',
         '-g',
         action='store_true',
-        help='Whiten (noise?) unused instead of alpha')
+        help='Unused to gray instead of alpha')
+    parser.add_argument(
+        '--black',
+        '-b',
+        action='store_true',
+        help='Unused to black instead of alpha')
     parser.add_argument(
         '--jpg', '-j', action='store_true', help='force jpg output')
     parser.add_argument('dir_in', help='')
@@ -65,7 +70,7 @@ if __name__ == "__main__":
         # lame
         return im.point([i / 256 for i in xrange(0x10000)], 'L')
 
-    for fn in glob.glob(os.path.join(args.dir_in, '*.png')):
+    for fn in sorted(glob.glob(os.path.join(args.dir_in, '*.png'))):
         print
         #print
         #print 'orig'
@@ -117,12 +122,17 @@ if __name__ == "__main__":
 
         draw.polygon(polym.values(), fill=255)
         if args.gray:
-            print 'MASK: gray'
+            print('MASK: gray')
             imr = Image.new('RGB', imi.size, color=(128, 128, 128))
             imr.paste(iml, mask=mask)
             imo = imr
+        elif args.black:
+            print('MASK: black')
+            imr = Image.new('RGB', imi.size, color=(0, 0, 0))
+            imr.paste(iml, mask=mask)
+            imo = imr
         else:
-            print 'MASK: alpha'
+            print('MASK: alpha')
             iml.putalpha(mask)
             #print iml.mode
             #print [iml.getpixel((i, i)) for i in xrange(0, 600, 50)]

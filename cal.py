@@ -79,7 +79,7 @@ def bad_pixs_df(fff, ffi, thresh_scalar=0.25):
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(description='Generate calibreation files from specially captured frames')
     parser.add_argument(
         '--images',
         type=int,
@@ -87,9 +87,9 @@ def main():
         help='Only take first n images, for debugging')
     parser.add_argument('--ff-thresh', default=0.25, type=float, help='')
     parser.add_argument('--df-thresh', default=0.25, type=float, help='')
-    parser.add_argument('ff_dir', help='')
-    parser.add_argument('df_dir', help='')
-    parser.add_argument('cal_dir', nargs='?', default=None, help='')
+    parser.add_argument('ff_dir', help='Flat field images')
+    parser.add_argument('df_dir', help='Dark field images')
+    parser.add_argument('cal_dir', nargs='?', default=None, help='Output calibration files dir')
     args = parser.parse_args()
 
     cal_dir = args.cal_dir

@@ -25,7 +25,7 @@ MAGIC = '\x42\x05\xa4\x06'
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='Replay captured USB packets')
+    parser = argparse.ArgumentParser(description='Read Dexis calibration file')
     parser.add_argument(
         '--hist-eq', '-e', action='store_true', help='Equalize histogram')
     parser.add_argument('fin', help='File name in')

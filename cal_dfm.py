@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-from __future__ import print_function
+#!/usr/bin/env python3
 '''
 File:               287304 bytes
 
@@ -23,7 +22,7 @@ MAGIC = '\xa9\x00\xa4\x06'
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='Replay captured USB packets')
+    parser = argparse.ArgumentParser(description='Read vendor dfm calibration file')
     parser.add_argument(
         '--hist-eq', '-e', action='store_true', help='Equalize histogram')
     parser.add_argument('fin', help='File name in')
