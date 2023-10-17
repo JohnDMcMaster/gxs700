@@ -33,6 +33,9 @@ def main():
         '--hist-eq-roi', default="258,258,516,516", help='hist eq x1,y1,x2,y2')
     add_bool_arg(parser, "--hist-eq", default=True)
     add_bool_arg(parser, "--raw", default=False)
+    add_bool_arg(parser, "--png", default=True)
+    add_bool_arg(parser, "--bin", default=False)
+    add_bool_arg(parser, "--process", default=True)
     parser.add_argument('fn_out', default=None, nargs='?', help='')
     args = parser.parse_args()
 
@@ -65,18 +68,21 @@ def main():
             imgn=args.n,
             int_t=args.int_t,
             force_trig=force_trig,
+            png_out=args.png,
+            bin_out=args.bin,
             xr=xr)
     # notably ^C can cause this
     finally:
         xr and xr.beam_off()
 
-    process_main.run(
-        outdir,
-        args.fn_out,
-        cal_dir=args.cal_dir,
-        hist_eq=args.hist_eq,
-        raw=args.raw,
-        hist_eq_roi=im_util.parse_roi(args.hist_eq_roi))
+    if args.process:    
+        process_main.run(
+            outdir,
+            args.fn_out,
+            cal_dir=args.cal_dir,
+            hist_eq=args.hist_eq,
+            raw=args.raw,
+            hist_eq_roi=im_util.parse_roi(args.hist_eq_roi))
 
     print("done")
 
