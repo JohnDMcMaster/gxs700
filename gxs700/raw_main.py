@@ -37,7 +37,7 @@ def run(
 
         if bin_out:
             print('Writing %s' % binfn)
-            open(binfn, 'w').write(imgb)
+            open(binfn, 'wb').write(imgb)
 
         if png_out:
             print('Decoding image...')
@@ -102,5 +102,4 @@ def main():
         int_t=args.int_t,
         ctr_thresh=args.ctr_thresh,
         bin_thresh=args.bin_thresh)
-
-
+        
