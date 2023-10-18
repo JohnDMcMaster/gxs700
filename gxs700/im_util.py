@@ -43,10 +43,10 @@ def average_imgs(imgs, scalar=None):
         scalar = 1.0
     scalar = scalar / len(imgs)
 
-    statef = np.zeros((height, width), np.float)
+    statef = np.zeros((height, width), float)
     for im in imgs:
         assert (width, height) == im.size
-        statef = statef + scalar * np.array(im, dtype=np.float)
+        statef = statef + scalar * np.array(im, dtype=float)
 
     return statef, npf2im(statef)
 
